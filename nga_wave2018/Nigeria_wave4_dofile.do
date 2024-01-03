@@ -757,3 +757,44 @@ merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\land_holding_2018.dta"
 
 save "${Nigeria_GHS_W4_created_data}\Nigeria_wave4_completedata_2018.dta", replace
 
+
+
+
+
+
+
+
+
+
+*****************Appending all Nigeria Datasets*****************
+use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2010\Nigeria_wave1_complete_data.dta",clear
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\Nigeria_wave2_complete_data.dta.dta" 
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2015\Nigeria_wave3_completedata_2015.dta" 
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2018\Nigeria_wave4_completedata_2018.dta"
+save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Nigeria_complete_data.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

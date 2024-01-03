@@ -671,3 +671,51 @@ merge 1:1 HHID using "${tza_GHS_W5_created_data}\land_holding_2020.dta"
 
 save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
+
+
+
+
+
+
+
+*****************Appending all Malawi Datasets*****************
+use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2010\tanzania_wave2_completedata_2010.dta",clear  
+
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012\tanzania_wave3_completedata_2012.dta" 
+
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2014\tanzania_wave4_completedata_2014.dta" 
+
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020\tanzania_wave5_completedata_2020.dta" 
+
+
+save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Tanzania_complete_data.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

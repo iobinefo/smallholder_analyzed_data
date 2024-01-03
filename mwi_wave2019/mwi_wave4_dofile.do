@@ -818,3 +818,52 @@ merge 1:1 HHID using "${mwi_GHS_W4_created_data}\land_holding_2019.dta"
 
 save "${mwi_GHS_W4_created_data}\Malawi_wave4_completedata_2019.dta", replace
 
+
+
+
+
+*****************Appending all Malawi Datasets*****************
+use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013\Malawi_wave2_completedata_2013.dta",clear  
+
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2016\Malawi_wave3_completedata_2016.dta" 
+
+append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019\Malawi_wave4_completedata_2019.dta"
+*append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2010\Malawi_wave1_completedata_2010.dta"
+
+
+save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Malawi_complete_data.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

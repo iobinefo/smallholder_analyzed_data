@@ -21,6 +21,7 @@ global mwi_GHS_W1_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder l
 *Subsidized Fertilizer (Coupon)
 ********************************
 use "${mwi_GHS_W1_raw_data}\ag_mod_e_10.dta",clear 
+ren HHID HHID
 *ag_e02a institution where they bought coupon
 *ag_e15 cost of coupon used 
 *ag_e16a ag_e16b institution where they bought coupon
@@ -64,7 +65,7 @@ save "${mwi_GHS_W1_created_data}\subsidized_fert_2010.dta", replace
 ***********************************************
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_f_10.dta",clear 
-
+ren HHID HHID
 *ag_f15 source of comercial fertilzer purchase1
 *ag_f25 source of comercial fertilzer purchase2
 *ag_f35 source of comercial fertilzer purchase3
@@ -187,7 +188,7 @@ save "${mwi_GHS_W1_created_data}\commercial_fert_2010.dta", replace
 
 
 /*use "${mwi_GHS_W1_raw_data}\ag_mod_f_10.dta",clear 
-
+ren HHID HHID
 ren s4aq1 formal_bank_2018
 tab formal_bank_2018, missing
 replace formal_bank_2018 =0 if formal_bank_2018 ==2 | formal_bank_2018 ==.
@@ -218,7 +219,7 @@ save "${mwi_GHS_W1_created_data}\commercial_fert_2010.dta", replace*/
 
 
 use "${mwi_GHS_W1_raw_data}\hh_mod_s1_10.dta",clear 
-
+ren HHID HHID
 *hh_s01 borrowed on credit
 *hh_s04 source of credit
 tab hh_s01
@@ -252,7 +253,7 @@ save "${mwi_GHS_W1_created_data}\credit_access_2010.dta", replace
 
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_t1_10.dta",clear 
-
+ren HHID HHID
 ren ag_t01 ext_acess_2010
 
 tab ext_acess_2010, missing
@@ -277,7 +278,7 @@ use "${mwi_GHS_W1_raw_data}\hh_mod_b_10.dta",clear
 
 
 merge 1:1 HHID id_code using "${mwi_GHS_W1_raw_data}\hh_mod_c_10.dta"
-
+ren HHID HHID
 *hh_b03 sex 
 *hh_b04 relationshiop to head
 *hh_b05a age (years)
@@ -401,7 +402,7 @@ save "${mwi_GHS_W1_created_data}\demographics_2010.dta", replace
 *********************************
 
 use "${mwi_GHS_W1_raw_data}\hh_mod_b_10.dta",clear 
-
+ren HHID HHID
 ren hh_b05a hh_age
 
 gen worker_2010 = 1
@@ -421,7 +422,7 @@ save "${mwi_GHS_W1_created_data}\labor_age_2010.dta", replace
 ********************************
 
 use "${mwi_GHS_W1_raw_data}\hh_mod_r_10.dta",clear 
-
+ren HHID HHID
 *hh_r01 received assistance
 gen safety_net_2010 =1 if hh_r01==1 
 tab safety_net_2010,missing
@@ -437,7 +438,7 @@ save "${mwi_GHS_W1_created_data}\safety_net_2010.dta", replace
 *Food Prices
 **************************************
 use "${mwi_GHS_W1_raw_data}\hh_mod_g1_10.dta",clear 
-
+ren HHID HHID
 *hh_g04a   qty purchased by household (7days)
 *hh_g04b hh_g04b_os     units purchased by household (7days)
 *hh_g05    cost of purchase by household (7days)
@@ -596,7 +597,7 @@ save "${mwi_GHS_W1_created_data}\food_prices_2010.dta", replace
 
 
 use "${mwi_GHS_W1_raw_data}\hh_mod_l_10.dta",clear 
-
+ren HHID HHID
 *hh_l03 qty of items
 *hh_l05 scrap value of items
 
@@ -708,7 +709,7 @@ label values season season
 gen field_size= (area_acres_est* (1/2.47105))
 replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
 
-
+ren HHID HHID
 collapse (sum) field_size, by (HHID)
 sort HHID
 ren field_size land_holding_2010
