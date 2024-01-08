@@ -65,24 +65,30 @@ gen subsidy_qty4 = ag3b_56 if ag3b_57==1
 tab subsidy_qty4
 
 
-egen subsidy_qty_2012 = rowtotal(subsidy_qty1 subsidy_qty2 subsidy_qty3 subsidy_qty4)
-br subsidy_qty1 subsidy_qty2 subsidy_qty3 subsidy_qty4 subsidy_qty_2012
-tab subsidy_qty_2012
+egen subsidy_qty = rowtotal(subsidy_qty1 subsidy_qty2 subsidy_qty3 subsidy_qty4)
+*br subsidy_qty1 subsidy_qty2 subsidy_qty3 subsidy_qty4 subsidy_qty
+tab subsidy_qty
 
 
 
-gen subsidy_dummy_2012 = 1 if ag3a_50==1 | ag3b_50==1 | ag3a_57==1 |ag3b_57==1
-tab subsidy_dummy_2012
-br ag3a_50 ag3b_50 ag3a_57 ag3b_57 subsidy_dummy_2012 if ag3a_57==1 
-replace subsidy_dummy_2012=0 if subsidy_dummy_2012==.
-tab subsidy_dummy_2012,missing
+gen subsidy_dummy = 1 if ag3a_50==1 | ag3b_50==1 | ag3a_57==1 |ag3b_57==1
+tab subsidy_dummy
+*br ag3a_50 ag3b_50 ag3a_57 ag3b_57 subsidy_dummy if ag3a_57==1 
+replace subsidy_dummy=0 if subsidy_dummy==.
+tab subsidy_dummy,missing
 
 
 
+gen org_fert = 1 if ag3a_41==1 | ag3b_41==1
+tab org_fert, missing
+replace org_fert =0 if org_fert==.
+tab org_fert,missing
 
-collapse (sum)subsidy_qty_2012 (max) subsidy_dummy_2012, by (HHID)
-label var subsidy_qty_2012 "Quantity of Fertilizer Purchased with voucher in kg"
-label var subsidy_dummy_2012 "=1 if acquired any fertilizer using voucher"
+
+collapse (sum)subsidy_qty (max) org_fert subsidy_dummy, by (HHID)
+la var org_fert "1= if used organic fertilizer"
+label var subsidy_qty "Quantity of Fertilizer Purchased with voucher in kg"
+label var subsidy_dummy "=1 if acquired any fertilizer using voucher"
 save "${tza_GHS_W3_created_data}\subsidized_fert_2012.dta", replace
 
 
@@ -91,7 +97,24 @@ save "${tza_GHS_W3_created_data}\subsidized_fert_2012.dta", replace
 
 
 
-
+********************************************************************************
+*HOUSEHOLD IDS
+********************************************************************************
+use "${tza_GHS_W3_raw_data }/HH_SEC_A.dta", clear 
+ren hh_a01_1 region 
+ren hh_a01_2 region_name
+ren hh_a02_1 district
+ren hh_a02_2 district_name
+ren hh_a03_1 ward 
+ren hh_a03_2 ward_name
+ren hh_a04_1 ea
+ren hh_a09 y2_hhid
+ren hh_a10 hh_split
+ren y3_weight weight
+gen rural = (y3_rural==1) 
+keep y3_hhid region district ward ea rural weight strataid clusterid y2_hhid hh_split
+lab var rural "1=Household lives in a rural area"
+save "${tza_GHS_W3_created_data}\hhids.dta", replace
 
 
 
@@ -105,7 +128,8 @@ save "${tza_GHS_W3_created_data}\subsidized_fert_2012.dta", replace
 
 use "${tza_GHS_W3_raw_data }\AG_SEC_3A.dta",clear 
 
-merge 1:1 y3_hhid plotnum using "${tza_GHS_W3_raw_data }\AG_SEC_3B.dta"
+merge 1:1 y3_hhid plotnum using "${tza_GHS_W3_raw_data }\AG_SEC_3B.dta", gen (fertilizer)
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
 
 ren y3_hhid HHID
 
@@ -130,23 +154,47 @@ ren y3_hhid HHID
 
 *ag3a_02_3  distance from plot to market in km
 
-gen dist_2012 = ag3a_02_3 
-tab dist_2012,missing
+gen dist = ag3a_02_3 
+tab dist,missing
 
-egen mediandist_pr_occ = median(dist_2012), by (occ)
-
-egen num_dist_pr_occ = count(dist_2012), by (occ)
-
-
-tab mediandist_pr_occ
-tab num_dist_pr_occ
+egen mediandist_ea_id = median(dist), by (ea)
+egen mediandist_region  = median(dist), by (region )
+egen mediandist_stratum = median(dist), by (strataid)
+egen mediandist_district  = median(dist), by (district )
 
 
 
-replace dist_2012 = mediandist_pr_occ if dist_2012 ==. 
+egen numdist_ea_id = count(dist), by (ea)
+egen numdist_region  = count(dist), by (region )
+egen numdist_stratum = count(dist), by (strataid)
+egen numdist_district  = count(dist), by (district)
 
-tab dist_2012,missing
-sum dist_2012,detail
+
+tab numdist_ea_id
+tab numdist_region
+tab numdist_stratum
+tab numdist_district
+
+
+gen dist_cens= dist
+
+replace dist_cens = mediandist_ea_id if dist_cens ==. & numdist_ea_id >= 470
+tab dist_cens,missing
+
+replace dist_cens = mediandist_region if dist_cens ==. & numdist_region >= 470
+tab dist_cens,missing
+
+replace dist_cens = mediandist_stratum if dist_cens ==. & numdist_stratum >= 470
+tab dist_cens ,missing
+
+replace dist_cens = mediandist_district if dist_cens ==. & numdist_district >= 470
+tab dist_cens ,missing
+
+
+egen med_dist = median (dist)
+replace dist_cens = med_dist if dist_cens==.
+tab dist_cens,missing
+sum dist_cens,detail
 
 
 ***fertilzer total quantity, total value & total price****
@@ -171,72 +219,76 @@ tab com_fert4_val
 
 *br com_fert1_qty com_fert1_val ag3a_50 com_fert2_qty com_fert2_val ag3b_50 com_fert3_qty com_fert3_val ag3a_57    
 
-egen total_qty_2012 = rowtotal(com_fert1_qty com_fert2_qty com_fert3_qty com_fert4_qty)
-tab  total_qty_2012, missing
+egen total_qty = rowtotal(com_fert1_qty com_fert2_qty com_fert3_qty com_fert4_qty)
+tab  total_qty, missing
 
-egen total_valuefert_2012 = rowtotal(com_fert1_val com_fert2_val com_fert3_val com_fert4_val)
-tab total_valuefert_2012,missing
+egen total_valuefert = rowtotal(com_fert1_val com_fert2_val com_fert3_val com_fert4_val)
+tab total_valuefert,missing
 
-gen tpricefert_2012 = total_valuefert_2012/total_qty_2012
-tab tpricefert_2012
-
-
-gen tpricefert_cens_2012 = tpricefert_2012
-replace tpricefert_cens_2012 = 2000 if tpricefert_cens_2012 > 2000 & tpricefert_cens_2012 < .
-replace tpricefert_cens_2012 = 500 if tpricefert_cens_2012 < 500
-tab tpricefert_cens_2012, missing
+gen tpricefert = total_valuefert/total_qty 
+tab tpricefert
 
 
-
-
-
-egen medianfert_pr_occ = median(tpricefert_cens_2012), by (occ)
-
-egen medianfert_pr_plotname  = median(tpricefert_cens_2012), by (plotname )
-
-egen num_fert_pr_occ = count(tpricefert_cens_2012), by (occ)
-
-egen num_fert_pr_plotname  = count(tpricefert_cens_2012), by (plotname )
-
-
-
-
-tab medianfert_pr_occ
-tab medianfert_pr_plotname
-
-
-
-tab num_fert_pr_occ
-tab num_fert_pr_plotname
-
-
-gen tpricefert_cens_mrk_2012 = tpricefert_cens_2012
-
-replace tpricefert_cens_mrk_2012 = medianfert_pr_occ if tpricefert_cens_mrk_2012 ==. & num_fert_pr_occ>= 159
-
-tab tpricefert_cens_mrk_2012,missing
-
-replace tpricefert_cens_mrk_2012 = medianfert_pr_plotname if tpricefert_cens_mrk_2012 ==. & num_fert_pr_plotname>= 159
-
-tab tpricefert_cens_mrk_2012,missing
-
-*egen median = median(tpricefert_cens_2010)
-*replace tpricefert_cens_mrk_2010 =  median if tpricefert_cens_mrk_2010 ==.
-*tab tpricefert_cens_mrk_2010,missing
+gen tpricefert_cens = tpricefert
+replace tpricefert_cens = 2000 if tpricefert_cens > 2000 & tpricefert_cens < .
+replace tpricefert_cens = 500 if tpricefert_cens < 500
+tab tpricefert_cens, missing
 
 
 
 
 
+egen medianfert_pr_ea_id = median(tpricefert_cens), by (ea)
+egen medianfert_pr_region  = median(tpricefert_cens), by (region )
+egen medianfert_pr_stratum = median(tpricefert_cens), by (strataid)
+egen medianfert_pr_district  = median(tpricefert_cens), by (district )
+
+
+
+egen num_fert_pr_ea_id = count(tpricefert_cens), by (ea)
+egen num_fert_pr_region  = count(tpricefert_cens), by (region )
+egen num_fert_pr_stratum = count(tpricefert_cens), by (strataid)
+egen num_fert_pr_district  = count(tpricefert_cens), by (district)
+
+
+tab num_fert_pr_ea_id
+tab num_fert_pr_region
+tab num_fert_pr_stratum
+tab num_fert_pr_district
+
+
+gen tpricefert_cens_mrk = tpricefert_cens
+
+replace tpricefert_cens_mrk = medianfert_pr_ea_id if tpricefert_cens_mrk ==. & num_fert_pr_ea_id >= 29
+tab tpricefert_cens_mrk,missing
+
+replace tpricefert_cens_mrk = medianfert_pr_region if tpricefert_cens_mrk ==. & num_fert_pr_region >= 29
+tab tpricefert_cens_mrk,missing
+
+replace tpricefert_cens_mrk = medianfert_pr_stratum if tpricefert_cens_mrk ==. & num_fert_pr_stratum >= 29
+tab tpricefert_cens_mrk ,missing
+
+replace tpricefert_cens_mrk = medianfert_pr_district if tpricefert_cens_mrk ==. & num_fert_pr_district >= 29
+tab tpricefert_cens_mrk ,missing
+
+egen mid_fert = median(tpricefert_cens)
+replace tpricefert_cens_mrk = mid_fert if tpricefert_cens_mrk==.
+tab tpricefert_cens_mrk,missing
 
 
 
 
-collapse (sum) dist_2012 total_qty_2012 total_valuefert_2012 (max) tpricefert_cens_mrk_2012, by(HHID)
-la var dist_2012 "Distance travelled from plot to market in km"
-label var total_qty_2012 "Total quantity of Commercial Fertilizer Purchased in kg"
-label var total_valuefert_2012 "Total value of commercial fertilizer purchased in naira"
-label var tpricefert_cens_mrk_2012 "price of commercial fertilizer purchased in naira"
+
+
+
+
+
+
+collapse (sum) dist_cens  total_qty  total_valuefert  (max) tpricefert_cens_mrk, by(HHID)
+la var dist_cens "Distance travelled from plot to market in km"
+label var total_qty  "Total quantity of Commercial Fertilizer Purchased in kg"
+label var total_valuefert "Total value of commercial fertilizer purchased in naira"
+label var tpricefert_cens_mrk  "price of commercial fertilizer purchased in naira"
 sort HHID
 save "${tza_GHS_W3_created_data}\commercial_fert_2012.dta", replace
 
@@ -261,28 +313,28 @@ ren y3_hhid HHID
 *hh_q03_h 1= save for unusually large expenses
 
 
-gen formal_bank_2012=1 if hh_q10==1
-tab formal_bank_2012, missing
-replace formal_bank_2012 =0 if formal_bank_2012 ==. 
-tab formal_bank_2012,nolabel
-tab formal_bank_2012,missing
+gen formal_bank =1 if hh_q10==1
+tab formal_bank, missing
+replace formal_bank =0 if formal_bank ==. 
+tab formal_bank,nolabel
+tab formal_bank,missing
 
 gen fin_service = 1 if hh_q01_1==1 | hh_q01_2==1 | hh_q01_3==1 | hh_q01_4==1
 replace fin_service =0 if fin_service ==.
 tab fin_service
 
 
-gen formal_save_2012 =1 if fin_service==1 & hh_q03_f==1 | hh_q03_g==1 | hh_q03_h==1
- tab formal_save_2012, missing
- replace formal_save_2012 =0 if formal_save_2012 ==.
- tab formal_save_2012, missing
+gen formal_save  =1 if fin_service==1 & hh_q03_f==1 | hh_q03_g==1 | hh_q03_h==1
+ tab formal_save, missing
+ replace formal_save =0 if formal_save ==.
+ tab formal_save, missing
 
 
 
- collapse (max) formal_bank_2012 formal_save_2012, by (HHID)
- la var formal_bank_2012 "=1 if respondent have an account in bank"
- la var formal_save_2012 "=1 if used formal saving group"
- *la var informal_save_2018 "=1 if used informal saving group"
+ collapse (max) formal_bank  formal_save, by (HHID)
+ la var formal_bank  "=1 if respondent have an account in bank"
+ la var formal_save  "=1 if used formal saving group"
+ *la var informal_save  "=1 if used informal saving group"
 save "${tza_GHS_W3_created_data}\savings_2012.dta", replace
 
 
@@ -298,22 +350,22 @@ ren y3_hhid HHID
 tab hh_p06
 tab hh_p03
 tab hh_p03,nolabel
- gen formal_credit_2012 =1 if hh_p06!=. & hh_p03 <=5 
- tab formal_credit_2012,missing
- replace formal_credit_2012 =0 if formal_credit_2012 ==.
- tab formal_credit_2012,missing
+ gen formal_credit =1 if hh_p06!=. & hh_p03 <=5 
+ tab formal_credit,missing
+ replace formal_credit =0 if formal_credit ==.
+ tab formal_credit,missing
  
 
  
- gen informal_credit_2012 =1 if hh_p06!=. & hh_p03 >5 
- tab informal_credit_2012,missing
-replace informal_credit_2012 =0 if informal_credit_2012 ==.
- tab informal_credit_2012,missing
+ gen informal_credit =1 if hh_p06!=. & hh_p03 >5 
+ tab informal_credit,missing
+replace informal_credit =0 if informal_credit ==.
+ tab informal_credit,missing
 
 
- collapse (max) formal_credit_2012 informal_credit_2012, by (HHID)
- la var formal_credit_2012 "=1 if borrowed from formal credit group"
- la var informal_credit_2012 "=1 if borrowed from informal credit group"
+ collapse (max) formal_credit  informal_credit, by (HHID)
+ la var formal_credit "=1 if borrowed from formal credit group"
+ la var informal_credit "=1 if borrowed from informal credit group"
 save "${tza_GHS_W3_created_data}\credit_access_2012.dta", replace
 
 
@@ -328,15 +380,15 @@ save "${tza_GHS_W3_created_data}\credit_access_2012.dta", replace
 
 use "${tza_GHS_W3_raw_data}\AG_SEC_12B.dta",clear 
 ren y3_hhid HHID
-ren ag12b_08 ext_acess_2012
+ren ag12b_08 ext_acess 
 
-tab ext_acess_2012, missing
-tab ext_acess_2012, nolabel
+tab ext_acess, missing
+tab ext_acess, nolabel
 
-replace ext_acess_2012 = 0 if ext_acess_2012==2 | ext_acess_2012==.
-tab ext_acess_2012, missing
-collapse (max) ext_acess_2012, by (HHID)
-la var ext_acess_2012 "=1 if received advise from extension services"
+replace ext_acess = 0 if ext_acess==2 | ext_acess==.
+tab ext_acess, missing
+collapse (max) ext_acess, by (HHID)
+la var ext_acess "=1 if received advise from extension services"
 save "${tza_GHS_W3_created_data}\Extension_access_2012.dta", replace
 
 
@@ -351,7 +403,8 @@ save "${tza_GHS_W3_created_data}\Extension_access_2012.dta", replace
 use "${tza_GHS_W3_raw_data}\HH_SEC_B.dta",clear 
 
 
-merge 1:1 y3_hhid indidy3 using "${tza_GHS_W3_raw_data}\HH_SEC_C.dta"
+merge 1:1 y3_hhid indidy3 using "${tza_GHS_W3_raw_data}\HH_SEC_C.dta", gen (household)
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
 ren y3_hhid HHID
 *hh_b02 sex 
 *hh_b05 relationshiop to head
@@ -360,69 +413,59 @@ ren y3_hhid HHID
 
 sort HHID indidy3
  
-gen num_mem_2012 = 1
+gen num_mem = 1
 
 
 ******** female head****
 
-gen femhead_2012 = 0
-replace femhead_2012 = 1 if hh_b02== 2 & hh_b05==1
-tab femhead_2012,missing
+gen femhead  = 0
+replace femhead = 1 if hh_b02== 2 & hh_b05==1
+tab femhead,missing
 
 ********Age of HHead***********
 ren hh_b04 hh_age
-gen hh_headage_2012 = hh_age if hh_b05==1
+gen hh_headage  = hh_age if hh_b05==1
 
-tab hh_headage_2012
+tab hh_headage
 
-replace hh_headage_2012 = 100 if hh_headage_2012 > 100 & hh_headage_2012 < .
-tab hh_headage_2012
-tab hh_headage_2012, missing
+replace hh_headage = 100 if hh_headage > 100 & hh_headage < .
+tab hh_headage
+tab hh_headage, missing
 
 
 ************generating the median age**************
+egen median_headage_ea_id = median(hh_headage), by (ea)
+egen median_headage_region  = median(hh_headage), by (region )
+egen median_headage_stratum  = median(hh_headage), by (strataid )
+egen median_headage_district  = median(hh_headage), by (district )
+
+egen num_headage_ea_id = count(hh_headage), by (ea)
+egen num_headage_region  = count(hh_headage), by (region )
+egen num_headage_stratum = count(hh_headage), by (strataid )
+egen num_headage_district  = count(hh_headage), by (district )
 
 
 
-egen median_headage_occ   = median(hh_headage_2012), by (occ)
-egen median_headage_y2_hhid  = median(hh_headage_2012), by (y2_hhid)
-*egen median_headage_qx_type = median(hh_headage_2012), by (qx_type)
+tab num_headage_ea_id
+tab num_headage_region
+tab num_headage_stratum
+tab num_headage_district
 
 
-egen num_headage_occ   = count(hh_headage_2012), by (occ)
-egen num_headage_y2_hhid  = count(hh_headage_2012), by (y2_hhid)
-*egen num_headage_qx_type = count(hh_headage_2012), by (qx_type)
+gen hh_headage_mrk  = hh_headage
 
-tab median_headage_occ 
-tab median_headage_y2_hhid
-*tab median_headage_qx_type
+replace hh_headage_mrk = median_headage_ea_id if hh_headage_mrk ==. & num_headage_ea_id >= 257
+tab hh_headage_mrk,missing
+replace hh_headage_mrk = median_headage_region if hh_headage_mrk ==. & num_headage_region >= 257
+tab hh_headage_mrk,missing
+replace hh_headage_mrk = median_headage_stratum if hh_headage_mrk ==. & num_headage_stratum >= 257
+tab hh_headage_mrk,missing
+replace hh_headage_mrk = median_headage_district if hh_headage_mrk ==. & num_headage_district >= 257
+tab hh_headage_mrk,missing
 
-
-
-tab num_headage_occ 
-tab num_headage_y2_hhid
-*tab num_headage_qx_type
-
-
-
-gen hh_headage_mrk_2012 = hh_headage_2012
-
-replace hh_headage_mrk_2012 = median_headage_y2_hhid if hh_headage_mrk_2012 ==. 
-
-tab hh_headage_mrk_2012,missing
-
-*replace hh_headage_mrk_2012 = median_headage_occ if hh_headage_mrk_2012 ==.
-
-*tab hh_headage_mrk_2012,missing
-
-
-*replace hh_headage_mrk_2010 = median_headage_qx_type if hh_headage_mrk_2010 ==. & num_headage_qx_type >= 1385
-
-*tab hh_headage_mrk_2010,missing
-
-egen median = median(hh_headage_mrk_2012)
-replace hh_headage_mrk_2012 =  median if hh_headage_mrk_2012 ==.
-tab hh_headage_mrk_2012,missing
+egen mid_age = median(hh_headage)
+replace hh_headage_mrk = mid_age if hh_headage_mrk==.
+tab hh_headage_mrk,missing
 
 
 ********************Education****************************************************
@@ -431,13 +474,13 @@ tab hh_headage_mrk_2012,missing
 *hh_b05 relationshiop to head
 
 
-ren  hh_c03 attend_sch_2012
-tab attend_sch_2012
-replace attend_sch_2012 = 0 if attend_sch_2012 ==2
-tab attend_sch_2012, nolabel
+ren  hh_c03 attend_sch 
+tab attend_sch
+replace attend_sch = 0 if attend_sch ==2
+tab attend_sch, nolabel
 
 
-replace hh_c07= 0 if attend_sch_2012==0
+replace hh_c07= 0 if attend_sch==0
 tab hh_c07
 tab hh_b05 if _merge==1
 
@@ -452,28 +495,28 @@ tab hh_c07 if hh_b05==1,missing
 *** Education Dummy Variable*****
  label list hh_c07
 
-gen pry_edu_2012 = 1 if hh_c07 < 18 & hh_b05==1
-tab pry_edu_2012,missing
-gen finish_pry_2012 = 1 if hh_c07 >= 18 & hh_c07 < 32 & hh_b05==1
-tab finish_pry_2012,missing
-gen finish_sec_2012 = 1 if hh_c07 >= 32 & hh_b05==1
-tab finish_sec_2012,missing
+gen pry_edu  = 1 if hh_c07 < 18 & hh_b05==1
+tab pry_edu,missing
+gen finish_pry  = 1 if hh_c07 >= 18 & hh_c07 < 32 & hh_b05==1
+tab finish_pry,missing
+gen finish_sec  = 1 if hh_c07 >= 32 & hh_b05==1
+tab finish_sec,missing
 
-replace pry_edu_2012 =0 if pry_edu_2012==. & hh_b05==1
-replace finish_pry_2012 =0 if finish_pry_2012==. & hh_b05==1
-replace finish_sec_2012 =0 if finish_sec_2012==. & hh_b05==1
-tab pry_edu_2012 if hh_b05==1 , missing
-tab finish_pry_2012 if hh_b05==1 , missing 
-tab finish_sec_2012 if hh_b05==1 , missing
+replace pry_edu =0 if pry_edu==. & hh_b05==1
+replace finish_pry =0 if finish_pry==. & hh_b05==1
+replace finish_sec =0 if finish_sec==. & hh_b05==1
+tab pry_edu if hh_b05==1 , missing
+tab finish_pry if hh_b05==1 , missing 
+tab finish_sec if hh_b05==1 , missing
 
-collapse (sum) num_mem_2012 (max) hh_headage_mrk_2012 femhead_2012 attend_sch_2012 pry_edu_2012 finish_pry_2012 finish_sec_2012, by (HHID)
-la var num_mem_2012 "household size"
-la var femhead_2012 "=1 if head is female"
-la var hh_headage_mrk_2012 "age of household head in years"
-la var attend_sch_2012 "=1 if respondent attended school"
-la var pry_edu_2012 "=1 if household head attended pry school"
-la var finish_pry_2012 "=1 if household head finished pry school"
-la var finish_sec_2012 "=1 if household head finished sec school"
+collapse (sum) num_mem (max) hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
+la var num_mem "household size"
+la var femhead "=1 if head is female"
+la var hh_headage_mrk "age of household head in years"
+la var attend_sch "=1 if respondent attended school"
+la var pry_edu "=1 if household head attended pry school"
+la var finish_pry "=1 if household head finished pry school"
+la var finish_sec "=1 if household head finished sec school"
 save "${tza_GHS_W3_created_data}\demographics_2012.dta", replace
 
 ********************************* 
@@ -485,13 +528,13 @@ use "${tza_GHS_W3_raw_data}\HH_SEC_B.dta",clear
 ren y3_hhid HHID
 ren hh_b04 hh_age
 
-gen worker_2012 = 1
-replace worker_2012 = 0 if hh_age < 15 | hh_age > 65
+gen worker = 1
+replace worker = 0 if hh_age < 15 | hh_age > 65
 
-tab worker_2012,missing
+tab worker,missing
 sort HHID
-collapse (sum) worker_2012, by (HHID)
-la var worker_2012 "number of members age 15 and older and less than 65"
+collapse (sum) worker, by (HHID)
+la var worker "number of members age 15 and older and less than 65"
 sort HHID
 
 save "${tza_GHS_W3_created_data}\labor_age_2012.dta", replace
@@ -504,13 +547,13 @@ save "${tza_GHS_W3_created_data}\labor_age_2012.dta", replace
 use "${tza_GHS_W3_raw_data}\HH_SEC_O1.dta",clear 
 ren y3_hhid HHID
 *hh_o01 received assistance
-gen safety_net_2012 =1 if hh_o01==1 
-tab safety_net_2012,missing
-replace safety_net_2012 =0 if safety_net_2012==.
-tab safety_net_2012,missing
-collapse (max) safety_net_2012, by (HHID)
-tab safety_net_2012
-la var safety_net_2012 "=1 if received cash transfer, cash for work, food for work or other assistance"
+gen safety_net =1 if hh_o01==1 
+tab safety_net,missing
+replace safety_net =0 if safety_net==.
+tab safety_net,missing
+collapse (max) safety_net, by (HHID)
+tab safety_net
+la var safety_net "=1 if received cash transfer, cash for work, food for work or other assistance"
 save "${tza_GHS_W3_created_data}\safety_net_2012.dta", replace
 
 
@@ -518,6 +561,7 @@ save "${tza_GHS_W3_created_data}\safety_net_2012.dta", replace
 *Food Prices
 **************************************
 use "${tza_GHS_W3_raw_data}\HH_SEC_J1.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
 ren y3_hhid HHID
 *hh_j03_2   qty purchased by household (7days)
 *hh_j03_1    units purchased by household (7days)
@@ -547,46 +591,59 @@ label list itemcode
 
 gen food_price_maize = hh_j03_2* conversion if itemcode==104
 
-gen maize_price_2012 = hh_j04/food_price_maize if itemcode==104
+gen maize_price  = hh_j04/food_price_maize if itemcode==104
 
-*br hh_j03_1 conversion hh_j03_2 hh_j04 food_price_maize maize_price_2012 itemcode if itemcode<=500
+*br hh_j03_1 conversion hh_j03_2 hh_j04 food_price_maize maize_price itemcode if itemcode<=500
 
-sum maize_price_2012,detail
-tab maize_price_2012
+sum maize_price,detail
+tab maize_price
 
-replace maize_price_2012 = 2000 if maize_price_2012 >2000 & maize_price_2012<.
-*replace maize_price_2012 = 50 if maize_price_2012< 50
-tab maize_price_2012,missing
-
-
-egen medianfert_pr_itemcode = median(maize_price_2012), by (itemcode)
-egen medianfert_pr_occ  = median(maize_price_2012), by (occ )
+replace maize_price = 2000 if maize_price >2000 & maize_price<.
+*replace maize_price = 50 if maize_price< 50
+tab maize_price,missing
 
 
-egen num_fert_pr_itemcode = count(maize_price_2012), by (itemcode)
-egen num_fert_pr_occ = count(maize_price_2012), by (occ )
-
-
-tab medianfert_pr_itemcode
-tab medianfert_pr_occ
+egen median_pr_ea_id = median(maize_price), by (ea)
+egen median_pr_region  = median(maize_price), by (region )
+egen median_pr_stratum  = median(maize_price), by (strataid )
+egen median_pr_district  = median(maize_price), by (district )
 
 
 
-tab num_fert_pr_itemcode
-tab num_fert_pr_occ
+
+egen num_pr_ea_id = count(maize_price), by (ea)
+egen num_pr_region = count(maize_price), by (region )
+egen num_pr_stratum = count(maize_price), by (strataid )
+egen num_pr_district  = count(maize_price), by (district )
 
 
-gen maize_price_mr_2012 = maize_price_2012
 
-replace maize_price_mr_2012 = medianfert_pr_occ if maize_price_mr_2012==. 
-tab maize_price_mr_2012,missing
 
-replace maize_price_mr_2012 = medianfert_pr_itemcode if maize_price_mr_2012==. 
-tab maize_price_mr_2012,missing
+tab num_pr_ea_id
+tab num_pr_region
+tab num_pr_stratum
+tab num_pr_district
 
-egen mid_maize = median(maize_price_mr_2012)
-replace maize_price_mr_2012= mid_maize if maize_price_mr_2012==.
-tab maize_price_mr_2012
+
+
+
+gen maize_price_mr  = maize_price
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. & num_pr_ea_id >= 16
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_region if maize_price_mr==. & num_pr_region>= 16
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_stratum if maize_price_mr==.  & num_pr_stratum>= 16
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_district if maize_price_mr==. & num_pr_district>= 16
+tab maize_price_mr,missing
+
+
+egen mid_price = median(maize_price)
+
+
+replace maize_price_mr = mid_price if maize_price_mr==.
+tab maize_price_mr,missing
 
 
 
@@ -604,48 +661,96 @@ tab maize_price_mr_2012
 
 gen food_price_rice = hh_j03_2* conversion if itemcode==101
 
-gen rice_price_2012 = hh_j04/food_price_rice if itemcode==101
+gen rice_price = hh_j04/food_price_rice if itemcode==101
 
-*br hh_j03_1 conversion hh_j03_2 hh_j04 food_price_rice rice_price_2012 itemcode if itemcode<=500
+*br hh_j03_1 conversion hh_j03_2 hh_j04 food_price_rice rice_price itemcode if itemcode<=500
 
-sum rice_price_2012,detail
-tab rice_price_2012
+sum rice_price,detail
+tab rice_price
 
-*replace rice_price_2012 = 1000 if rice_price_2012 >1000 & rice_price_2012<.
-*replace rice_price_2012 = 25 if rice_price_2012< 25
-*tab rice_price_2012,missing
-
-
-egen median_pr_itemcode = median(rice_price_2012), by (itemcode)
-egen median_pr_occ  = median(rice_price_2012), by (occ )
+*replace rice_price = 1000 if rice_price >1000 & rice_price<.
+*replace rice_price = 25 if rice_price< 25
+*tab rice_price,missing
 
 
-
-egen num_pr_itemcode = count(rice_price_2012), by (itemcode)
-egen num_pr_occ = count(rice_price_2012), by (occ )
+egen medianr_pr_ea_id = median(rice_price), by (ea)
+egen medianr_pr_region  = median(rice_price), by (region )
+egen medianr_pr_stratum  = median(rice_price), by (strataid)
+egen medianr_pr_district  = median(rice_price), by (district )
 
 
 
-tab median_pr_itemcode
+
+egen numr_pr_ea_id = count(rice_price), by (ea)
+egen numr_pr_region = count(rice_price), by (region )
+egen numr_pr_stratum = count(rice_price), by (strataid )
+egen numr_pr_district  = count(rice_price), by (district )
+
+
+tab numr_pr_ea_id
+tab numr_pr_region
+tab numr_pr_stratum
+tab numr_pr_district
 
 
 
-tab num_pr_itemcode
-tab num_pr_occ
 
-gen rice_price_mr_2012 = rice_price_2012
+gen rice_price_mr  = rice_price
 
-replace rice_price_mr_2012 = median_pr_itemcode if rice_price_mr_2012==. 
-tab rice_price_mr_2012,missing
-replace rice_price_mr_2012 = median_pr_occ if rice_price_mr_2012==. 
-tab rice_price_mr_2012,missing
-egen mid_rice = median(rice_price_mr_2012)
-replace rice_price_mr_2012= mid_rice if rice_price_mr_2012==.
-tab rice_price_mr_2012
+replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. & numr_pr_ea_id >= 1
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_region if rice_price_mr==. & numr_pr_region>= 1
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_stratum if rice_price_mr==.  & numr_pr_stratum>= 1
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_district if rice_price_mr==. & numr_pr_district>= 1
+tab rice_price_mr,missing
 
-collapse  (max) maize_price_mr_2012 rice_price_mr_2012, by(HHID)
-label var maize_price_mr_2012 "commercial price of maize in naira"
-label var rice_price_mr_2012 "commercial price of rice in naira"
+
+egen midr_price = median(rice_price)
+
+
+replace rice_price_mr = midr_price if rice_price_mr==.
+tab rice_price_mr,missing
+
+
+
+
+
+
+**************
+*Net Buyers and Sellers
+***************
+*hh_j03_2 from purchases
+*hh_j05_2 from own production
+
+//They are using the same conversion
+*br hh_j03_2 hh_j03_1 hh_j05_2 hh_j05_1 if (hh_j03_2 !=. & hh_j03_2 !=0) & (hh_j05_2 !=. & hh_j05_2 !=0)
+tab hh_j03_2
+tab hh_j05_2
+
+replace hh_j03_2 = 0 if hh_j03_2<=0 |hh_j03_2==.
+tab hh_j03_2,missing
+replace hh_j05_2 = 0 if hh_j05_2<=0 |hh_j05_2==.
+tab hh_j05_2,missing
+
+gen net_seller = 1 if hh_j05_2 > hh_j03_2
+tab net_seller,missing
+replace net_seller=0 if net_seller==.
+tab net_seller,missing
+
+gen net_buyer = 1 if hh_j05_2 < hh_j03_2
+tab net_buyer,missing
+replace net_buyer=0 if net_buyer==.
+tab net_buyer,missing
+
+
+
+collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(HHID)
+la var net_seller "1= if respondent is a net seller"
+la var net_buyer "1= if respondent is a net buyer"
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
 sort HHID
 save "${tza_GHS_W3_created_data}\food_prices_2012.dta", replace
 
@@ -661,53 +766,63 @@ save "${tza_GHS_W3_created_data}\food_prices_2012.dta", replace
 
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_M.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
 ren y3_hhid HHID
 *hh_m01 qty of items
 *hh_m04 scrap value of items
 
-gen hhasset_value_2012 = hh_m01*hh_m04
-tab hhasset_value_2012
-sum hhasset_value_2012,detail
-replace hhasset_value_2012 = 7800000  if hhasset_value_2012 > 7800000  & hhasset_value_2012 <.
-replace hhasset_value_2012 = 2000 if hhasset_value_2012 <2000
-tab hhasset_value_2012,missing
+gen hhasset_value = hh_m01*hh_m04
+tab hhasset_value
+sum hhasset_value,detail
+replace hhasset_value = 7800000  if hhasset_value > 7800000  & hhasset_value <.
+replace hhasset_value = 2000 if hhasset_value <2000
+tab hhasset_value,missing
 
 ************generating the mean vakue**************
-*ren  interview_status occ
-egen mean_val_itemcode  = mean(hhasset_value_2012), by (itemcode )
-egen mean_val_occ = mean(hhasset_value_2012), by (occ)
-
-
-egen num_val_itemcode  = count(hhasset_value_2012), by (itemcode )
-egen num_val_occ = count(hhasset_value_2012), by (occ)
+egen mean_val_ea_id = mean(hhasset_value), by (ea)
+egen mean_val_region = mean(hhasset_value), by (region)
+egen mean_val_stratum  = mean(hhasset_value), by (strataid )
+egen mean_val_district  = mean(hhasset_value), by (district )
 
 
 
 
-tab mean_val_itemcode
-*tab mean_val_HHID
+egen num_val_ea_id = count(hhasset_value), by (ea)
+egen num_val_region = count(hhasset_value), by (region)
+egen num_val_stratum  = count(hhasset_value), by (strataid )
+egen num_val_district  = count(hhasset_value), by (district )
 
 
 
-tab num_val_itemcode
-*tab num_val_HHID
+
+tab num_val_ea_id
+tab num_val_region
+tab num_val_stratum
+tab num_val_district
 
 
-replace hhasset_value_2012 = mean_val_itemcode if hhasset_value_2012 ==. 
-
-tab hhasset_value_2012,missing
-replace hhasset_value_2012 = mean_val_occ if hhasset_value_2012 ==. 
-
-tab hhasset_value_2012,missing
-
-egen mean = mean(hhasset_value_2012)
-replace hhasset_value_2012 =  mean if hhasset_value_2012 ==.
-tab hhasset_value_2012,missing
 
 
-collapse (sum) hhasset_value_2012, by (HHID)
 
-la var hhasset_value_2012 "total value of household asset"
+
+replace hhasset_value = mean_val_ea_id if hhasset_value ==. & num_val_ea_id >= 2099
+tab hhasset_value,missing
+replace hhasset_value = mean_val_region if hhasset_value ==. & num_val_region >= 2099
+tab hhasset_value,missing
+replace hhasset_value = mean_val_stratum if hhasset_value ==. & num_val_stratum >= 2099
+tab hhasset_value,missing
+replace hhasset_value = mean_val_district if hhasset_value ==. & num_val_district >= 2099
+tab hhasset_value,missing
+
+egen mid_asset = median(hhasset_value)
+replace hhasset_value= mid_asset if hhasset_value==.
+tab hhasset_value,missing
+
+
+
+collapse (sum) hhasset_value, by (HHID)
+
+la var hhasset_value "total value of household asset"
 save "${tza_GHS_W3_created_data}\hhasset_value_2012.dta", replace
 
 
@@ -735,10 +850,10 @@ gen area_meas_hectares= area_acres_meas* (1/2.47105)
 ren y3_hhid HHID
 collapse (sum) area_est_hectares area_meas_hectares , by (HHID)
 sort HHID
-ren area_est_hectares land_holding_est_2012
-ren area_meas_hectares land_holding_meas_2012
-label var land_holding_est_2012 "land holding estimated in hectares"
-label var land_holding_meas_2012 "land holding measured using gps in hectares"
+ren area_est_hectares land_holding_est 
+ren area_meas_hectares land_holding_meas 
+label var land_holding_est  "land holding estimated in hectares"
+label var land_holding_meas "land holding measured using gps in hectares"
 save "${tza_GHS_W3_created_data}\land_holding_2012.dta", replace
 
 
@@ -756,25 +871,26 @@ use "${tza_GHS_W3_created_data}\commercial_fert_2012.dta", replace
 
 *******All observations Merged*****
 
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\subsidized_fert_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\savings_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\credit_access_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\Extension_access_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\demographics_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\labor_age_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\safety_net_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\food_prices_2012.dta", nogen
-
-merge 1:1 HHID using "${tza_GHS_W3_created_data}\hhasset_value_2012.dta", nogen
-
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\subsidized_fert_2012.dta", gen (subsidized)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\savings_2012.dta", gen (savings)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\credit_access_2012.dta", gen (credit)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\Extension_access_2012.dta", gen (extension)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\demographics_2012.dta", gen (demographics)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\labor_age_2012.dta", gen (labor)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\safety_net_2012.dta", gen (safety)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\food_prices_2012.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\hhasset_value_2012.dta", gen (hhasset)
+sort HHID
 merge 1:1 HHID using "${tza_GHS_W3_created_data}\land_holding_2012.dta"
-
+gen year = 2012
+sort HHID
 save "${tza_GHS_W3_created_data}\tanzania_wave3_completedata_2012.dta", replace
 

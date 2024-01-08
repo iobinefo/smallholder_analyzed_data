@@ -61,22 +61,22 @@ gen subsidy_qty2 = s11dq28 if institute2 ==1
 tab subsidy_qty2
 
 
-egen subsidy_qty_2012 = rowtotal(subsidy_qty1 subsidy_qty2)
-tab subsidy_qty_2012,missing
-sum subsidy_qty_2012,detail
+egen subsidy_qty = rowtotal(subsidy_qty1 subsidy_qty2)
+tab subsidy_qty,missing
+sum subsidy_qty,detail
 
 
-gen subsidy_dummy_2012 = 0
-replace subsidy_dummy_2012 = 1 if institute==1
-tab subsidy_dummy_2012, missing
-replace subsidy_dummy_2012 = 1 if institute2==1
-tab subsidy_dummy_2012, missing
+gen subsidy_dummy = 0
+replace subsidy_dummy = 1 if institute==1
+tab subsidy_dummy, missing
+replace subsidy_dummy = 1 if institute2==1
+tab subsidy_dummy, missing
 
 
 
-collapse (sum)subsidy_qty_2012 (max) subsidy_dummy_2012, by (hhid)
-label var subsidy_qty_2012 "Quantity of Fertilizer Purchased in kg"
-label var subsidy_dummy_2012 "=1 if acquired any subsidied fertilizer"
+collapse (sum)subsidy_qty (max) subsidy_dummy, by (hhid)
+label var subsidy_qty "Quantity of Fertilizer Purchased in kg"
+label var subsidy_dummy "=1 if acquired any subsidied fertilizer"
 save "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", replace
 
 
@@ -109,47 +109,47 @@ label list institute2
 
 ***fertilzer total quantity, total value & total price****
 
-gen private_fert1_qty_2012 = s11dq16 if institute ==4
-tab private_fert1_qty_2012, missing
-gen private_fert2_qty_2012 = s11dq28 if institute2 ==4
-tab private_fert2_qty_2012,missing
+gen private_fert1_qty = s11dq16 if institute ==4
+tab private_fert1_qty, missing
+gen private_fert2_qty = s11dq28 if institute2 ==4
+tab private_fert2_qty,missing
 
-gen private_fert1_val_2012 = s11dq19 if institute ==4
-tab private_fert1_val_2012,missing
-gen private_fert2_val_2012 = s11dq29 if institute2 ==4
-tab private_fert2_val_2012,missing
+gen private_fert1_val = s11dq19 if institute ==4
+tab private_fert1_val,missing
+gen private_fert2_val = s11dq29 if institute2 ==4
+tab private_fert2_val,missing
 
-egen total_qty_2012 = rowtotal(private_fert1_qty_2012 private_fert2_qty_2012)
-tab  total_qty_2012, missing
+egen total_qty = rowtotal(private_fert1_qty private_fert2_qty)
+tab  total_qty, missing
 
-egen total_valuefert_2012 = rowtotal(private_fert1_val_2012 private_fert2_val_2012)
-tab total_valuefert_2012,missing
+egen total_valuefert = rowtotal(private_fert1_val private_fert2_val)
+tab total_valuefert,missing
 
-gen tpricefert_2012 = total_valuefert_2012/total_qty_2012
-tab tpricefert_2012
+gen tpricefert = total_valuefert/total_qty
+tab tpricefert
 
-gen tpricefert_cens_2012 = tpricefert_2012 
-replace tpricefert_cens_2012 = 650 if tpricefert_2012 > 650 & tpricefert_2012 < .
-replace tpricefert_cens_2012 = 2 if tpricefert_2012 < 2
-tab tpricefert_cens_2012, missing
-
-
+gen tpricefert_cens = tpricefert
+replace tpricefert_cens = 650 if tpricefert_cens > 650 & tpricefert_cens < .
+replace tpricefert_cens = 2 if tpricefert_cens < 2
+tab tpricefert_cens, missing
 
 
 
-egen medianfert_pr_ea = median(tpricefert_cens_2012), by (ea)
 
-egen medianfert_pr_lga = median(tpricefert_cens_2012), by (lga)
 
-egen num_fert_pr_ea = count(tpricefert_cens_2012), by (ea)
+egen medianfert_pr_ea = median(tpricefert_cens), by (ea)
 
-egen num_fert_pr_lga = count(tpricefert_cens_2012), by (lga)
+egen medianfert_pr_lga = median(tpricefert_cens), by (lga)
 
-egen medianfert_pr_state = median(tpricefert_cens_2012), by (state)
-egen num_fert_pr_state = count(tpricefert_cens_2012), by (state)
+egen num_fert_pr_ea = count(tpricefert_cens), by (ea)
 
-egen medianfert_pr_zone = median(tpricefert_cens_2012), by (zone)
-egen num_fert_pr_zone = count(tpricefert_cens_2012), by (zone)
+egen num_fert_pr_lga = count(tpricefert_cens), by (lga)
+
+egen medianfert_pr_state = median(tpricefert_cens), by (state)
+egen num_fert_pr_state = count(tpricefert_cens), by (state)
+
+egen medianfert_pr_zone = median(tpricefert_cens), by (zone)
+egen num_fert_pr_zone = count(tpricefert_cens), by (zone)
 
 
 
@@ -165,37 +165,45 @@ tab num_fert_pr_lga
 tab num_fert_pr_state
 tab num_fert_pr_zone
 
-gen tpricefert_cens_mrk_2012 = tpricefert_cens_2012
+gen tpricefert_cens_mrk = tpricefert_cens
 
-replace tpricefert_cens_mrk_2012 = medianfert_pr_ea if tpricefert_cens_mrk_2012 ==. & num_fert_pr_ea >= 7
+replace tpricefert_cens_mrk = medianfert_pr_ea if tpricefert_cens_mrk ==. & num_fert_pr_ea >= 7
 
-tab tpricefert_cens_mrk_2012,missing
-
-
-replace tpricefert_cens_mrk_2012 = medianfert_pr_lga if tpricefert_cens_mrk_2012 ==. & num_fert_pr_lga >= 7
-
-tab tpricefert_cens_mrk_2012,missing
+tab tpricefert_cens_mrk,missing
 
 
+replace tpricefert_cens_mrk = medianfert_pr_lga if tpricefert_cens_mrk ==. & num_fert_pr_lga >= 7
 
-replace tpricefert_cens_mrk_2012 = medianfert_pr_state if tpricefert_cens_mrk_2012 ==. & num_fert_pr_state >= 7
-
-tab tpricefert_cens_mrk_2012,missing
-
-
-replace tpricefert_cens_mrk_2012 = medianfert_pr_zone if tpricefert_cens_mrk_2012 ==. & num_fert_pr_zone >= 7
-
-tab tpricefert_cens_mrk_2012,missing
+tab tpricefert_cens_mrk,missing
 
 
 
+replace tpricefert_cens_mrk = medianfert_pr_state if tpricefert_cens_mrk ==. & num_fert_pr_state >= 7
+
+tab tpricefert_cens_mrk,missing
+
+
+replace tpricefert_cens_mrk = medianfert_pr_zone if tpricefert_cens_mrk ==. & num_fert_pr_zone >= 7
+
+tab tpricefert_cens_mrk,missing
+
+
+***************
+*organic fertilizer
+***************
+gen org_fert = 1 if  s11dq3==3 | s11dq7==3 | s11dq15==3 |  s11dq27==3
+tab org_fert, missing
+replace org_fert = 0 if org_fert==.
+tab org_fert, missing
 
 
 
-collapse (sum) total_qty_2012 total_valuefert_2012 (max) tpricefert_cens_mrk_2012, by(hhid)
-label var total_qty_2012 "Total quantity of Commercial Fertilizer Purchased in kg"
-label var total_valuefert_2012 "Total value of commercial fertilizer purchased in naira"
-label var tpricefert_cens_mrk_2012 "price of commercial fertilizer purchased in naira"
+
+collapse (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(hhid)
+la var org_fert "1= if used organic fertilizer"
+label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
+label var total_valuefert "Total value of commercial fertilizer purchased in naira"
+label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort hhid
 save "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace
 
@@ -213,26 +221,26 @@ use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect4a_plantingw2
 
 
 
-ren s4aq1 formal_bank_2012
-tab formal_bank_2012, missing
-replace formal_bank_2012 =0 if formal_bank_2012 ==2 | formal_bank_2012 ==.
-tab formal_bank_2012, nolabel
-tab formal_bank_2012,missing
+ren s4aq1 formal_bank
+tab formal_bank, missing
+replace formal_bank =0 if formal_bank ==2 | formal_bank ==.
+tab formal_bank, nolabel
+tab formal_bank,missing
 
- gen formal_save_2012 = 1 if s4aq9b !=. | s4aq9d !=.| s4aq9f !=.
- tab formal_save_2012, missing
- replace formal_save_2012 = 0 if formal_save ==.
- tab formal_save_2012, missing
+ gen formal_save = 1 if s4aq9b !=. | s4aq9d !=.| s4aq9f !=.
+ tab formal_save, missing
+ replace formal_save = 0 if formal_save ==.
+ tab formal_save, missing
 
- ren s4aq10 informal_save_2012
- tab informal_save_2012, missing
- replace informal_save_2012 =0 if informal_save_2012 ==2 | informal_save_2012 ==.
- tab informal_save_2012, missing
+ ren s4aq10 informal_save
+ tab informal_save, missing
+ replace informal_save =0 if informal_save ==2 | informal_save ==.
+ tab informal_save, missing
 
- collapse (max) formal_bank_2012 formal_save_2012 informal_save_2012, by (hhid)
- la var formal_bank_2012 "=1 if respondent have an account in bank"
- la var formal_save_2012 "=1 if used formal saving group"
- la var informal_save_2012 "=1 if used informal saving group"
+ collapse (max) formal_bank formal_save informal_save, by (hhid)
+ la var formal_bank "=1 if respondent have an account in bank"
+ la var formal_save "=1 if used formal saving group"
+ la var informal_save "=1 if used informal saving group"
 save "${Nigeria_GHS_W2_created_data}\savings_2012.dta", replace
 
 
@@ -249,20 +257,20 @@ use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect4a_plantingw2
 
 
 
- gen formal_credit_2012 =1 if s4aq12b !=. | s4aq12d !=. | s4aq12f !=.
- tab formal_credit_2012,missing
- replace formal_credit_2012 =0 if formal_credit ==.
- tab formal_credit_2012,missing
+ gen formal_credit =1 if s4aq12b !=. | s4aq12d !=. | s4aq12f !=.
+ tab formal_credit,missing
+ replace formal_credit =0 if formal_credit ==.
+ tab formal_credit,missing
  
- ren  s4aq13 informal_credit_2012
- tab informal_credit_2012, missing
- replace informal_credit_2012 =0 if informal_credit ==2 | informal_credit ==.
- tab informal_credit_2012,missing
+ ren  s4aq13 informal_credit
+ tab informal_credit, missing
+ replace informal_credit =0 if informal_credit ==2 | informal_credit ==.
+ tab informal_credit,missing
 
 
- collapse (max) formal_credit_2012 informal_credit_2012, by (hhid)
- la var formal_credit_2012 "=1 if borrowed from formal credit group"
- la var informal_credit_2012 "=1 if borrowed from informal credit group"
+ collapse (max) formal_credit informal_credit, by (hhid)
+ la var formal_credit "=1 if borrowed from formal credit group"
+ la var informal_credit "=1 if borrowed from informal credit group"
 save "${Nigeria_GHS_W2_created_data}\credit_2012.dta", replace
 
 
@@ -279,15 +287,15 @@ use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11l1_planti
 
 
 
-ren s11l1q1 ext_acess_2012
+ren s11l1q1 ext_acess
 
-tab ext_acess_2012, missing
-tab ext_acess_2012, nolabel
+tab ext_acess, missing
+tab ext_acess, nolabel
 
-replace ext_acess_2012 = 0 if ext_acess_2012==2 | ext_acess_2012==.
-tab ext_acess_2012, missing
-collapse (max) ext_acess_2012, by (hhid)
-la var ext_acess_2012 "=1 if received advise from extension services"
+replace ext_acess = 0 if ext_acess==2 | ext_acess==.
+tab ext_acess, missing
+collapse (max) ext_acess, by (hhid)
+la var ext_acess "=1 if received advise from extension services"
 save "${Nigeria_GHS_W2_created_data}\extension_visit_2012.dta", replace
 
 
@@ -310,34 +318,78 @@ merge 1:1 hhid indiv using "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Hous
 
 sort hhid indiv 
  
-gen num_mem_2012 = 1
+gen num_mem = 1
 
 
 
 ******** female head****
 
-gen femhead_2012 = 0
-replace femhead_2012 = 1 if s1q2== 2 & s1q3==1
-tab femhead_2012,missing
+gen femhead = 0
+replace femhead = 1 if s1q2== 2 & s1q3==1
+tab femhead,missing
 
 ********Age of HHead***********
 ren s1q6 hh_age
-gen hh_headage_2012 = hh_age if s1q3==1
+gen hh_headage = hh_age if s1q3==1
 
-tab hh_headage_2012
+tab hh_headage
 
-replace hh_headage_2012 = 100 if hh_headage_2012 > 100 & hh_headage < .
-tab hh_headage_2012
-tab hh_headage_2012, missing
+replace hh_headage = 100 if hh_headage > 100 & hh_headage < .
+tab hh_headage
+tab hh_headage, missing
 
-egen hh_headage_cens = median(hh_headage_2012)
-tab hh_headage_cens
+************generating the median age**************
 
-***** replacing the missing age values with the median age for household head
-replace hh_headage_2012 = hh_headage_cens if hh_headage_2012 ==.
-tab hh_headage_2012, missing
-sum hh_headage_2012, detail
+egen medianhh_pr_ea = median(hh_headage), by (ea)
 
+egen medianhh_pr_lga = median(hh_headage), by (lga)
+
+egen num_hh_pr_ea = count(hh_headage), by (ea)
+
+egen num_hh_pr_lga = count(hh_headage), by (lga)
+
+egen medianhh_pr_state = median(hh_headage), by (state)
+egen num_hh_pr_state = count(hh_headage), by (state)
+
+egen medianhh_pr_zone = median(hh_headage), by (zone)
+egen num_hh_pr_zone = count(hh_headage), by (zone)
+
+
+tab medianhh_pr_ea
+tab medianhh_pr_lga
+tab medianhh_pr_state
+tab medianhh_pr_zone
+
+
+
+tab num_hh_pr_ea
+tab num_hh_pr_lga
+tab num_hh_pr_state
+tab num_hh_pr_zone
+
+
+
+replace hh_headage = medianhh_pr_ea if hh_headage ==. & num_hh_pr_ea >= 30
+
+tab hh_headage,missing
+
+
+replace hh_headage = medianhh_pr_lga if hh_headage ==. & num_hh_pr_lga >= 30
+
+tab hh_headage,missing
+
+
+
+replace hh_headage = medianhh_pr_state if hh_headage ==. & num_hh_pr_state >= 30
+
+tab hh_headage,missing
+
+
+replace hh_headage = medianhh_pr_zone if hh_headage ==. & num_hh_pr_zone >= 30
+
+tab hh_headage,missing
+
+sum hh_headage, detail
 
 
 ********************Education****************************************************
@@ -347,13 +399,13 @@ sum hh_headage_2012, detail
 *s1q3 relationship to hhead
 
 
-ren s2q5 attend_sch_2012
-tab attend_sch_2012
-replace attend_sch_2012 = 0 if attend_sch_2012 ==2
-tab attend_sch_2012, nolabel
+ren s2q5 attend_sch
+tab attend_sch
+replace attend_sch = 0 if attend_sch ==2
+tab attend_sch, nolabel
 *tab s1q4 if s2q7==.
 
-replace s2q8= 0 if attend_sch_2012==0
+replace s2q8= 0 if attend_sch==0
 tab s2q8
 tab s1q3 if _merge==1
 
@@ -364,25 +416,25 @@ replace s2q8 = 16 if s2q8==. &  s1q3==1
 
  label list S2Q8
 
-gen pry_edu_2012 = 1 if s2q8 >= 1 & s2q8 < 16 & s1q3==1
-gen finish_pry_2012 = 1 if s2q8 >= 16 & s2q8 < 26 & s1q3==1
-gen finish_sec_2012 = 1 if s2q8 >= 26 & s2q8 < 43 & s1q3==1
+gen pry_edu = 1 if s2q8 >= 1 & s2q8 < 16 & s1q3==1
+gen finish_pry = 1 if s2q8 >= 16 & s2q8 < 26 & s1q3==1
+gen finish_sec = 1 if s2q8 >= 26 & s2q8 < 43 & s1q3==1
 
-replace pry_edu_2012 =0 if pry_edu_2012==. & s1q3==1
-replace finish_pry_2012 =0 if finish_pry_2012==. & s1q3==1
-replace finish_sec_2012 =0 if finish_sec==. & s1q3==1
-tab pry_edu_2012 if s1q3==1 , missing
-tab finish_pry_2012 if s1q3==1 , missing 
-tab finish_sec_2012 if s1q3==1 , missing
+replace pry_edu =0 if pry_edu==. & s1q3==1
+replace finish_pry =0 if finish_pry==. & s1q3==1
+replace finish_sec =0 if finish_sec==. & s1q3==1
+tab pry_edu if s1q3==1 , missing
+tab finish_pry if s1q3==1 , missing 
+tab finish_sec if s1q3==1 , missing
 
-collapse (sum) num_mem_2012 (max) hh_headage_2012 femhead_2012 attend_sch_2012 pry_edu_2012 finish_pry_2012 finish_sec_2012, by (hhid)
+collapse (sum) num_mem (max) hh_headage femhead attend_sch pry_edu finish_pry finish_sec, by (hhid)
 la var num_mem "household size"
-la var femhead_2012 "=1 if head is female"
-la var hh_headage_2012 "age of household head in years"
-la var attend_sch_2012 "=1 if respondent attended school"
-la var pry_edu_2012 "=1 if household head attended pry school"
-la var finish_pry_2012 "=1 if household head finished pry school"
-la var finish_sec_2012 "=1 if household head finished sec school"
+la var femhead "=1 if head is female"
+la var hh_headage "age of household head in years"
+la var attend_sch "=1 if respondent attended school"
+la var pry_edu "=1 if household head attended pry school"
+la var finish_pry "=1 if household head finished pry school"
+la var finish_sec "=1 if household head finished sec school"
 save "${Nigeria_GHS_W2_created_data}\demographics_2012.dta", replace
 
 ********************************* 
@@ -392,13 +444,13 @@ use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect1_plantingw2.
 
 ren s1q6 hh_age
 
-gen worker_2012 = 1
-replace worker_2012 = 0 if hh_age < 15 | hh_age > 65
+gen worker = 1
+replace worker = 0 if hh_age < 15 | hh_age > 65
 
-tab worker_2012,missing
+tab worker,missing
 sort hhid
-collapse (sum) worker_2012, by (hhid)
-la var worker_2012 "number of members age 15 and older and less than 65"
+collapse (sum) worker, by (hhid)
+la var worker "number of members age 15 and older and less than 65"
 sort hhid
 
 save "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta", replace
@@ -410,12 +462,12 @@ save "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta", replace
 
 use "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Household\sect14_harvestw2.dta",clear 
 
-ren s14q1 safety_net_2012
-replace safety_net_2012 =0 if safety_net_2012 ==2 | safety_net_2012==.
-tab safety_net_2012,missing
-collapse (max) safety_net_2012, by (hhid)
-tab safety_net_2012
-la var safety_net_2012 "=1 if received cash transfer, cash for work, food for work or other assistance"
+ren s14q1 safety_net
+replace safety_net =0 if safety_net ==2 | safety_net==.
+tab safety_net,missing
+collapse (max) safety_net, by (hhid)
+tab safety_net
+la var safety_net "=1 if received cash transfer, cash for work, food for work or other assistance"
 save "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta", replace
 
 
@@ -459,30 +511,30 @@ tab conversion, missing
 
 gen food_price_maize = s7bq3a* conversion if item_cd==16
 
-gen maize_price_2012 = s7bq4/food_price_maize if item_cd==16
+gen maize_price = s7bq4/food_price_maize if item_cd==16
 
-*br  s7bq3b conversion s7bq3a s7bq4  food_price_maize maize_price_2012 item_cd if item_cd<=27
+*br  s7bq3b conversion s7bq3a s7bq4  food_price_maize maize_price item_cd if item_cd<=27
 
-sum maize_price_2012,detail
-tab maize_price_2012
+sum maize_price,detail
+tab maize_price
 
-replace maize_price_2012 = 700 if maize_price_2012 >700 & maize_price_2012<.
-replace maize_price_2012 = 20 if maize_price_2012< 20
-tab maize_price_2012,missing
+replace maize_price = 700 if maize_price >700 & maize_price<.
+replace maize_price = 20 if maize_price< 20
+tab maize_price,missing
 
 
 
-egen median_pr_ea = median(maize_price_2012), by (ea)
-egen median_pr_lga = median(maize_price_2012), by (lga)
-egen median_pr_sector = median(maize_price_2012), by (sector)
-egen median_pr_state = median(maize_price_2012), by (state)
-egen median_pr_zone = median(maize_price_2012), by (zone)
+egen median_pr_ea = median(maize_price), by (ea)
+egen median_pr_lga = median(maize_price), by (lga)
+egen median_pr_sector = median(maize_price), by (sector)
+egen median_pr_state = median(maize_price), by (state)
+egen median_pr_zone = median(maize_price), by (zone)
 
-egen num_pr_ea = count(maize_price_2012), by (ea)
-egen num_pr_lga = count(maize_price_2012), by (lga)
-egen num_pr_sector = count(maize_price_2012), by (sector)
-egen num_pr_state = count(maize_price_2012), by (state)
-egen num_pr_zone = count(maize_price_2012), by (zone)
+egen num_pr_ea = count(maize_price), by (ea)
+egen num_pr_lga = count(maize_price), by (lga)
+egen num_pr_sector = count(maize_price), by (sector)
+egen num_pr_state = count(maize_price), by (state)
+egen num_pr_zone = count(maize_price), by (zone)
 
 tab num_pr_ea
 tab num_pr_lga
@@ -490,21 +542,21 @@ tab num_pr_state
 tab num_pr_zone
 
 
-gen maize_price_mr_2012 = maize_price_2012
+gen maize_price_mr = maize_price
 
-replace maize_price_mr_2012 = median_pr_ea if maize_price_mr_2012==. & num_pr_ea>=5
-tab maize_price_mr_2012,missing
+replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=5
+tab maize_price_mr,missing
 
-replace maize_price_mr_2012 = median_pr_lga if maize_price_mr_2012==. & num_pr_lga>=5
-tab maize_price_mr_2012,missing
-replace maize_price_mr_2012 = median_pr_sector if maize_price_mr_2012==. & num_pr_sector>=5
-tab maize_price_mr_2012,missing
+replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=5
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_sector if maize_price_mr==. & num_pr_sector>=5
+tab maize_price_mr,missing
 
-replace maize_price_mr_2012 = median_pr_state if maize_price_mr_2012==. & num_pr_state>=5
-tab maize_price_mr_2012,missing
+replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=5
+tab maize_price_mr,missing
 
-replace maize_price_mr_2012 = median_pr_zone if maize_price_mr_2012==. & num_pr_zone>=5
-tab maize_price_mr_2012,missing
+replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=5
+tab maize_price_mr,missing
 
 
 
@@ -527,28 +579,28 @@ tab maize_price_mr_2012,missing
 
 gen food_price_rice = s7bq3a* conversion if item_cd==13
 
-gen rice_price_2012 = s7bq4/food_price_rice if item_cd==13 
+gen rice_price = s7bq4/food_price_rice if item_cd==13 
 
-*br  s7bq3b conversion s7bq3a food_price_rice s7bq4 rice_price_2012 item_cd if item_cd<=17
+*br  s7bq3b conversion s7bq3a food_price_rice s7bq4 rice_price item_cd if item_cd<=17
 
-sum rice_price_2012,detail
-tab rice_price_2012
+sum rice_price,detail
+tab rice_price
 
-replace rice_price_2012 = 900 if rice_price_2012 >900 & rice_price_2012<.
-replace rice_price_2012 = 25 if rice_price_2012< 25
-tab rice_price_2012,missing
+replace rice_price = 900 if rice_price >900 & rice_price<.
+replace rice_price = 25 if rice_price< 25
+tab rice_price,missing
 
 
 
-egen median_rice_ea = median(rice_price_2012), by (ea)
-egen median_rice_lga = median(rice_price_2012), by (lga)
-egen median_rice_state = median(rice_price_2012), by (state)
-egen median_rice_zone = median(rice_price_2012), by (zone)
+egen median_rice_ea = median(rice_price), by (ea)
+egen median_rice_lga = median(rice_price), by (lga)
+egen median_rice_state = median(rice_price), by (state)
+egen median_rice_zone = median(rice_price), by (zone)
 
-egen num_rice_ea = count(rice_price_2012), by (ea)
-egen num_rice_lga = count(rice_price_2012), by (lga)
-egen num_rice_state = count(rice_price_2012), by (state)
-egen num_rice_zone = count(rice_price_2012), by (zone)
+egen num_rice_ea = count(rice_price), by (ea)
+egen num_rice_lga = count(rice_price), by (lga)
+egen num_rice_state = count(rice_price), by (state)
+egen num_rice_zone = count(rice_price), by (zone)
 
 tab num_rice_ea
 tab num_rice_lga
@@ -556,24 +608,52 @@ tab num_rice_state
 tab num_rice_zone
 
 
-gen rice_price_mr_2012 = rice_price_2012
+gen rice_price_mr = rice_price
 
-replace rice_price_mr_2012 = median_rice_ea if rice_price_mr_2012==. & num_rice_ea>=7
-tab rice_price_mr_2012,missing
+replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=7
+tab rice_price_mr,missing
 
-replace rice_price_mr_2012 = median_rice_lga if rice_price_mr_2012==. & num_rice_lga>=7
-tab rice_price_mr_2012,missing
+replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=7
+tab rice_price_mr,missing
 
-replace rice_price_mr_2012 = median_rice_state if rice_price_mr_2012==. & num_rice_state>=7
-tab rice_price_mr_2012,missing
+replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=7
+tab rice_price_mr,missing
 
-replace rice_price_mr_2012 = median_rice_zone if rice_price_mr_2012==. & num_rice_zone>=7
-tab rice_price_mr_2012,missing
+replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=7
+tab rice_price_mr,missing
 
 
-collapse  (max) maize_price_mr_2012 rice_price_mr_2012, by(hhid)
-label var maize_price_mr_2012 "commercial price of maize in naira"
-label var rice_price_mr_2012 "commercial price of rice in naira"
+
+
+**************
+*Net Buyers and Sellers
+***************
+*s7bq5a from purchases
+*s7bq6a from own production
+
+tab s7bq5a
+tab s7bq6a
+
+replace s7bq5a = 0 if s7bq5a<=0 |s7bq5a==.
+tab s7bq5a,missing
+replace s7bq6a = 0 if s7bq6a<=0 |s7bq6a==.
+tab s7bq6a,missing
+
+gen net_seller = 1 if s7bq6a > s7bq5a
+tab net_seller,missing
+replace net_seller=0 if net_seller==.
+tab net_seller,missing
+
+gen net_buyer = 1 if s7bq6a < s7bq5a
+tab net_buyer,missing
+replace net_buyer=0 if net_buyer==.
+tab net_buyer,missing
+
+collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(hhid)
+la var net_seller "1= if respondent is a net seller"
+la var net_buyer "1= if respondent is a net buyer"
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
 sort hhid
 save "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta", replace
 
@@ -606,17 +686,17 @@ save "${Nigeria_GHS_W2_created_data}\item_cost_2012.dta", replace
 sort hhid item_cd
 merge 1:1 hhid item_cd using "${Nigeria_GHS_W2_created_data}\item_qty_2012.dta"
 drop _merge
-gen hhasset_value_2012 = s5q4*s5q1
-replace hhasset_value_2012 = 1000000 if hhasset_value_2012 > 1000000 & hhasset_value_2012 <.
-replace hhasset_value_2012 = 200 if hhasset_value_2012 <200
-egen hhasset_median = median(hhasset_value_2012)
+gen hhasset_value = s5q4*s5q1
+replace hhasset_value = 1000000 if hhasset_value > 1000000 & hhasset_value <.
+replace hhasset_value = 200 if hhasset_value <200
+egen hhasset_median = median(hhasset_value)
 tab hhasset_median
-tab hhasset_value_2012,missing
-replace hhasset_value_2012 = hhasset_median if hhasset_value_2012==.
-tab hhasset_value_2012,missing
-collapse (sum) hhasset_value_2012, by (hhid)
+tab hhasset_value,missing
+replace hhasset_value = hhasset_median if hhasset_value==.
+tab hhasset_value,missing
+collapse (sum) hhasset_value, by (hhid)
 
-la var hhasset_value_2012 "total value of household asset"
+la var hhasset_value "total value of household asset"
 save "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta", replace
 
 
@@ -734,8 +814,8 @@ sum field_size, detail
 *Total land holding including cultivated and rented out
 collapse (sum) field_size, by (hhid)
 sort hhid
-ren field_size land_holding_2012
-label var land_holding_2012 "land holding in hectares"
+ren field_size land_holding
+label var land_holding "land holding in hectares"
 save "${Nigeria_GHS_W2_created_data}\land_holding_2012.dta", replace
 
  
@@ -753,26 +833,27 @@ use "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace
 *******All observations Merged*****
 
 
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\savings_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\credit_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\extension_visit_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\demographics_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta", nogen
-
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta", nogen
-
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", gen (subsidized)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\savings_2012.dta", gen (savings)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\credit_2012.dta", gen (credit)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\extension_visit_2012.dta", gen (extension)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\demographics_2012.dta", gen (demographics)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta", gen (labor)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta", gen (safety)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta", gen (foodprices)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta", gen (asset)
+sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\land_holding_2012.dta"
-
+gen year = 2012
+sort hhid
 save "${Nigeria_GHS_W2_created_data}\Nigeria_wave2_complete_data.dta.dta", replace
 
 
