@@ -377,6 +377,47 @@ save "${Nigeria_GHS_W3_created_data}\extension_access_2015.dta", replace
 
 
 
+*****************************
+*Community 
+****************************
+
+use "${Nigeria_GHS_W3_raw_data}\sectc2_harvestw3.dta", clear
+*is_cd  219 for market infrastructure
+*c2q3  distance to infrastructure in km
+
+gen mrk_dist = c2q3 if is_cd==222
+tab mrk_dist if is_cd==222, missing
+egen median_lga = median(mrk_dist), by (zone state lga)
+egen median_state = median(mrk_dist), by (zone state)
+egen median_zone = median(mrk_dist), by (zone)
+
+
+replace mrk_dist =0 if is_cd==222 & mrk_dist==. & c2q1==1
+tab mrk_dist if is_cd==222, missing
+
+replace mrk_dist = median_lga if mrk_dist==. & is_cd==222
+replace mrk_dist = median_state if mrk_dist==. & is_cd==222
+replace mrk_dist = median_zone if mrk_dist==. & is_cd==222
+tab mrk_dist if is_cd==222, missing
+
+replace mrk_dist= 50 if mrk_dist>=50 & mrk_dist<. & is_cd==222
+tab mrk_dist if is_cd==222, missing
+
+sort zone state ea
+collapse (max) median_lga median_state median_zone mrk_dist, by (zone state lga sector ea)
+replace mrk_dist = median_lga if mrk_dist ==.
+tab mrk_dist, missing
+replace mrk_dist = median_state if mrk_dist ==.
+tab mrk_dist, missing
+replace mrk_dist = median_zone if mrk_dist ==.
+tab mrk_dist, missing
+la var mrk_dist "=distance to the market"
+
+save "${Nigeria_GHS_W3_created_data}\market_distance.dta", replace 
+
+
+
+
 *********************************
 *Demographics 
 *********************************
@@ -386,7 +427,23 @@ save "${Nigeria_GHS_W3_created_data}\extension_access_2015.dta", replace
 use "${Nigeria_GHS_W3_raw_data}\sect1_plantingw3.dta",clear 
 
 
-merge 1:1 hhid indiv using "${Nigeria_GHS_W3_raw_data}\sect2_harvestw3.dta"
+merge 1:1 hhid indiv using "${Nigeria_GHS_W3_raw_data}\sect2_harvestw3.dta", gen(household)
+
+merge m:1 zone state lga sector ea using "${Nigeria_GHS_W3_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
+
+**************
+*market distance
+*************
+replace mrk_dist = median_lga if mrk_dist==.
+tab mrk_dist, missing
+
+replace mrk_dist = median_state if mrk_dist==.
+tab mrk_dist, missing
+
+replace mrk_dist = median_zone if mrk_dist==.
+tab mrk_dist, missing
+
+
 
 *s1q2   sex
 *s1q3   relationship to household head
@@ -505,8 +562,9 @@ tab pry_edu if s1q3==1 , missing
 tab finish_pry if s1q3==1 , missing 
 tab finish_sec if s1q3==1 , missing
 
-collapse (sum) num_mem (max) hh_headage femhead attend_sch pry_edu finish_pry finish_sec , by (hhid)
+collapse (sum) num_mem (max) mrk_dist hh_headage femhead attend_sch pry_edu finish_pry finish_sec , by (hhid)
 la var num_mem "household size"
+la var mrk_dist "distance to the nearest market in km"
 la var femhead  "=1 if head is female"
 la var hh_headage "age of household head in years"
 la var attend_sch "=1 if respondent attended school"

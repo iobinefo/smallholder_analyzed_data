@@ -80,13 +80,90 @@ lab var rural "1=Household lives in a rural area"
 keep case_id stratum district ta ea_id rural region weight 
 save "${mwi_GHS_W1_created_data}\hhids.dta", replace
 
+
+
+
+
+********************
+*Community Data
+********************
+use "${mwi_GHS_W1_raw_data}\com_cd_10.dta",clear 
+
+merge 1:m ea_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+
+
+*com_cd16a  distance to daily market   com_cd15 (1= market in commumity)
+*com_cd16b  units of distance to daily market
+*com_cd18a  distance to large weekly market  com_cd17 (1= market in commumity)
+*com_cd18b  units of distance to weekly market
+
+
+***daily market***
+gen mrk_dist = com_cd16a 
+tab mrk_dist,missing
+egen median_case = median(mrk_dist), by (region stratum district case_id)
+egen median_district = median(mrk_dist), by (region stratum district)
+egen median_stratum = median(mrk_dist), by (region stratum)
+egen median_region = median(mrk_dist), by (region)
+
+
+replace mrk_dist =0 if mrk_dist==. & com_cd15==1
+tab mrk_dist, missing
+
+replace mrk_dist = median_case if mrk_dist==. 
+replace mrk_dist = median_district if mrk_dist==. 
+replace mrk_dist = median_stratum if mrk_dist==. 
+replace mrk_dist = median_region if mrk_dist==. 
+tab mrk_dist, missing
+
+replace mrk_dist= 70 if mrk_dist>=70 & mrk_dist<. 
+tab mrk_dist, missing
+
+***weekly market***
+gen mrk2_dist = com_cd18a 
+tab mrk2_dist,missing
+egen median2_case = median(mrk2_dist), by (region stratum district case_id)
+egen median2_district = median(mrk2_dist), by (region stratum district)
+egen median2_stratum = median(mrk2_dist), by (region stratum)
+egen median2_region = median(mrk2_dist), by (region)
+
+
+replace mrk2_dist =0 if mrk2_dist==. & com_cd17==1
+tab mrk2_dist, missing
+
+replace mrk2_dist = median_case if mrk2_dist==. 
+replace mrk2_dist = median_district if mrk2_dist==. 
+replace mrk2_dist = median_stratum if mrk2_dist==. 
+replace mrk2_dist = median_region if mrk2_dist==. 
+tab mrk2_dist, missing
+
+
+
+
+sort region stratum district case_id
+collapse (max) mrk_dist mrk2_dist, by (region stratum district case_id ea)
+tab mrk_dist, missing
+tab mrk2_dist, missing
+la var mrk_dist "=distance to the daily market"
+la var mrk2_dist "=distance to the weekly market"
+
+
+save "${mwi_GHS_W1_created_data}\community", replace
+
+
 *********************************************** 
 *Purchased Fertilizer
 ***********************************************
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_f_10.dta",clear 
 
-merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta", gen(hhids)
+
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\community", keepusing (mrk_dist mrk2_dist)
+
+
+
+
 ren HHID HHID
 *ag_f15 source of comercial fertilzer purchase1
 *ag_f25 source of comercial fertilzer purchase2
@@ -207,8 +284,10 @@ tab org_fert,missing
 
 
 
-collapse (sum) total_qty  total_valuefert (max) org_fert tpricefert_cens_mrk, by(HHID)
+collapse (sum) total_qty  total_valuefert (max) mrk_dist mrk2_dist org_fert tpricefert_cens_mrk, by(HHID)
 la var org_fert "1= if used organic fertilizer"
+la var mrk_dist "=distance to the daily market in km"
+la var mrk2_dist "=distance to the weekly market in km"
 label var total_qty  "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
 label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
