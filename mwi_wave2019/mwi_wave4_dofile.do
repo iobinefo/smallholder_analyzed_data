@@ -13,8 +13,49 @@ clear
 
 
 
-global mwi_GHS_W4_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\MWI_2010-2019_IHPS_v06_M_Stata (1)"
-global mwi_GHS_W4_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019"
+global mwi_GHS_W4_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\MWI_2010-2019_IHPS_v06_M_Stata (1)"
+global mwi_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019"
+
+
+
+
+************************
+*Geodata Variables
+************************
+
+use "${mwi_GHS_W4_raw_data}\plotgeovariables_y4.dta", clear
+*merge 1:m case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+ren y4_hhid HHID
+
+encode plot_srtm, gen( plot_slope)
+encode plot_srtmslp,  gen(plot_elevation)
+ren plot_twi plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+
+egen med_slope = median( plot_slope)
+egen med_elevation = median( plot_elevation)
+egen med_wetness = median( plot_wetness)
+
+
+
+replace plot_slope= med_slope if plot_slope==.
+replace plot_elevation= med_elevation if plot_elevation==.
+replace plot_wetness= med_wetness if plot_wetness==.
+
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (HHID)
+sort HHID
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${mwi_GHS_W4_created_data}\geodata_2019.dta", replace
+
+
+
+
+
 
 
 ********************************
@@ -138,6 +179,73 @@ save "${mwi_GHS_W4_created_data}\hhids.dta", replace
 
 
 
+********************
+*Community Data
+********************
+use "${mwi_GHS_W4_raw_data}\com_cd_19.dta",clear 
+
+merge 1:m ea_id using  "${mwi_GHS_W4_created_data}\hhids.dta"
+
+
+*com_cd16  distance to daily market   com_cd15 (1= market in commumity)
+*com_cd16b  units of distance to daily market
+*com_cd18a  distance to large weekly market  com_cd17 (1= market in commumity)
+*com_cd18b  units of distance to weekly market
+
+
+***daily market***
+gen mrk_dist = com_cd16
+tab mrk_dist,missing
+
+replace mrk_dist = 0.001*mrk_dist if com_cd16b==1
+*br com_cd16 com_cd16b mrk_dist
+egen median_case = median(mrk_dist), by (region district  ea_id)
+egen median_district = median(mrk_dist), by (region district )
+egen median_region = median(mrk_dist), by (region)
+
+replace mrk_dist =0 if mrk_dist==. & com_cd15==1
+tab mrk_dist, missing
+
+replace mrk_dist = median_case if mrk_dist==. 
+replace mrk_dist = median_district if mrk_dist==. 
+replace mrk_dist = median_region if mrk_dist==. 
+tab mrk_dist, missing
+
+*replace mrk_dist= 48 if mrk_dist>=48 & mrk_dist<. 
+*tab mrk_dist, missing
+
+***weekly market***
+gen mrk2_dist = com_cd18a 
+tab mrk2_dist,missing
+replace mrk2_dist = 0.001*mrk2_dist if com_cd18b==1
+*br com_cd16a com_cd16b mrk_dist
+
+egen median2_case = median(mrk2_dist), by (region district  ea_id)
+egen median2_district = median(mrk2_dist), by (region district )
+egen median2_region = median(mrk2_dist), by (region )
+
+
+replace mrk2_dist =0 if mrk2_dist==. & com_cd17==1
+tab mrk2_dist, missing
+
+replace mrk2_dist = median_case if mrk2_dist==. 
+replace mrk2_dist = median_district if mrk2_dist==. 
+replace mrk2_dist = median_region if mrk2_dist==. 
+tab mrk2_dist, missing
+
+
+sort region district  ea_id
+collapse (max) mrk_dist mrk2_dist, by (y4_hhid region district ea_id)
+tab mrk_dist, missing
+tab mrk2_dist, missing
+la var mrk_dist "=distance to the daily market"
+la var mrk2_dist "=distance to the weekly market"
+
+
+save "${mwi_GHS_W4_created_data}\community", replace
+
+
+
 
 
 
@@ -148,7 +256,9 @@ save "${mwi_GHS_W4_created_data}\hhids.dta", replace
 ***********************************************
 
 use "${mwi_GHS_W4_raw_data}\ag_mod_f_19.dta",clear 
-merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\hhids.dta"
+merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\hhids.dta", gen (household)
+merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\community", keepusing (mrk_dist mrk2_dist)
+
 ren y4_hhid HHID
 *ag_f15 source of comercial fertilzer purchase1
 *ag_f25 source of comercial fertilzer purchase2
@@ -273,8 +383,10 @@ replace org_fert =0 if org_fert==.
 tab org_fert,missing
 
 
-collapse (sum) total_qty  total_valuefert  (max) org_fert tpricefert_cens_mrk, by(HHID)
+collapse (sum) total_qty  total_valuefert  (max) mrk_dist mrk2_dist org_fert tpricefert_cens_mrk, by(HHID)
 label var org_fert  "1= if used organic fertilizer"
+la var mrk_dist "=distance to the daily market"
+la var mrk2_dist "=distance to the weekly market"
 label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert  "Total value of commercial fertilizer purchased in naira"
 label var tpricefert_cens_mrk  "price of commercial fertilizer purchased in naira"
@@ -824,20 +936,21 @@ label var land_holding  "land holding in hectares"
 save "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
 
 
+*******************************
+*Soil Quality
+*******************************
 
-/*ren plot plot_id
-ren gardenid garden_id
-keep y3_hhid case_id plot_id garden_id area_acres_est area_acres_meas field_size season	
-gen gps_meas = area_acres_meas!=. 
-lab var gps_meas "Plot was measured with GPS, 1=Yes" 
+use "${mwi_GHS_W4_raw_data}\ag_mod_d_19.dta" , clear
+ren y4_hhid HHID
 
-lab var area_acres_meas "Plot area in acres (GPSd)"
-lab var area_acres_est "Plot area in acres (estimated)"
-gen area_est_hectares=area_acres_est* (1/2.47105)  
-gen area_meas_hectares= area_acres_meas* (1/2.47105)
-lab var area_meas_hectares "Plot are in hectares (GPSd)"
-lab var area_est_hectares "Plot area in hectares (estimated)"*/
-
+ren ag_d22 soil_quality
+tab soil_quality, missing
+egen med_soil = median(soil_quality)
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+collapse (max) soil_quality, by (HHID)
+la var soil_quality "1=Good 2= fair 3=poor "
+save "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", replace
 
 
 
@@ -871,6 +984,10 @@ merge 1:1 HHID using "${mwi_GHS_W4_created_data}\safety_net_2019.dta", gen (safe
 sort HHID
 merge 1:1 HHID using "${mwi_GHS_W4_created_data}\food_prices_2019.dta", gen (foodprices)
 sort HHID
+merge 1:1 HHID using "${mwi_GHS_W4_created_data}\geodata_2019.dta", gen (geodata)
+sort HHID
+merge 1:1 HHID using "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", gen (soil)
+sort HHID
 merge 1:1 HHID using "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", gen (asset)
 sort HHID
 merge 1:1 HHID using "${mwi_GHS_W4_created_data}\land_holding_2019.dta"
@@ -883,16 +1000,16 @@ save "${mwi_GHS_W4_created_data}\Malawi_wave4_completedata_2019.dta", replace
 
 
 *****************Appending all Malawi Datasets*****************
-use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013\Malawi_wave2_completedata_2013.dta",clear  
+use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013\Malawi_wave2_completedata_2013.dta",clear  
 
 *append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2010\Malawi_wave1_completedata_2010.dta"
 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2016\Malawi_wave3_completedata_2016.dta" 
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2016\Malawi_wave3_completedata_2016.dta" 
 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019\Malawi_wave4_completedata_2019.dta"
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019\Malawi_wave4_completedata_2019.dta"
 
 
-save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Malawi_complete_data.dta", replace
+save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Malawi_complete_data.dta", replace
 
 
 

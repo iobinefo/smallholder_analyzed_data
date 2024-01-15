@@ -13,8 +13,8 @@ clear
 
 
 
-global tza_GHS_W4_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\TZA_2014_NPS-R4_v03_M_STATA11"
-global tza_GHS_W4_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2014"
+global tza_GHS_W4_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\TZA_2014_NPS-R4_v03_M_STATA11"
+global tza_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2014"
 
 
 ********************************
@@ -859,6 +859,22 @@ save "${tza_GHS_W4_created_data}\land_holding_2014.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
+
+use "${tza_GHS_W4_raw_data}\ag_sec_3a.dta",clear 
+ren y4_hhid HHID
+
+ren ag3a_11 soil_quality
+tab soil_quality, missing
+egen med_soil = median(soil_quality)
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+collapse (max) soil_quality, by (HHID)
+la var soil_quality "1=Good 2= Average 3=Bad "
+save "${tza_GHS_W4_created_data}\soil_quality_2014.dta", replace
+
 
 
 
@@ -884,6 +900,8 @@ sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\safety_net_2014.dta", gen (safety)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\food_prices_2014.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\soil_quality_2014.dta", gen (soil)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\hhasset_value_2014.dta", gen (hhasset)
 sort HHID

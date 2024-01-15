@@ -4,15 +4,47 @@
 
 
 
-
-
-
-
-
 clear
 
-global Nigeria_GHS_W2_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\NGA_2012_GHSP-W2_v02_M_STATA" 
-global Nigeria_GHS_W2_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012"
+global Nigeria_GHS_W2_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\NGA_2012_GHSP-W2_v02_M_STATA" 
+global Nigeria_GHS_W2_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012"
+
+
+
+
+************************
+*Geodata Variables
+************************
+
+use "${Nigeria_GHS_W2_raw_data}\Geodata Wave 2\NGA_PlotGeovariables_Y2.dta", clear
+
+
+ren srtmslp_nga plot_slope
+ren srtm_nga  plot_elevation
+ren twi_nga   plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+/*egen med_slope = median( plot_slope)
+egen med_elevation = median( plot_elevation)
+egen med_wetness = median( plot_wetness)
+
+replace plot_slope= med_slope if plot_slope==.
+replace plot_elevation= med_elevation if plot_elevation==.
+replace plot_wetness= med_wetness if plot_wetness==.*/
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (hhid)
+sort hhid
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${Nigeria_GHS_W2_created_data}\geodata_2012.dta", replace
+
+
+
+
+
+
 
 ****************************
 *Subsidized Fertilizer
@@ -537,65 +569,27 @@ save "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta", replace
 **************************************
 *Food Prices
 **************************************
-use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect7b_plantingw2.dta", clear
-
-*s7bq3a   qty purchased by household (7days)
-*s7bq3b s7bq3c     units purchased by household (7days)
-*s7bq4    cost of purchase by household (7days)
+use "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Community\sectc8_harvestw2.dta", clear
 
 
 
-
-*********Getting the price for maize only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//   Kilogram       1
-//   gram        	0.001
-//	 litre     		1
-//	 cenlitre     	0.01
-//	 congo          1.5
-//	 derica         0.75
-//	 mudu           0.30
-//	 pieces	        0.35
-
-gen conversion =1
-replace conversion=1 if s7bq3b==1 | s7bq3b ==3
-gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*0.001 if s7bq3b==2 |	s7bq3b==4 
-replace conversion = food_size*0.30 if s7bq3b==5	
-replace conversion = food_size*1.5 if s7bq3b==7
-replace conversion = food_size*0.75 if s7bq3b==10 |	s7bq3b==11	
-replace conversion = food_size*0.30 if s7bq3b==16				
-tab conversion, missing	
-
-
-
-gen food_price_maize = s7bq3a* conversion if item_cd==16
-
-gen maize_price = s7bq4/food_price_maize if item_cd==16
-
-*br  s7bq3b conversion s7bq3a s7bq4  food_price_maize maize_price item_cd if item_cd<=27
-
+gen maize_price=c8q2 if item_cd==3
+tab maize_price,missing
 sum maize_price,detail
 tab maize_price
 
-replace maize_price = 700 if maize_price >700 & maize_price<.
-replace maize_price = 20 if maize_price< 20
-tab maize_price,missing
+replace maize_price = 900 if maize_price >900 & maize_price<.  //bottom 2%
+*replace maize_price = 10 if maize_price< 10        ////top 5%
 
 
 
 egen median_pr_ea = median(maize_price), by (ea)
 egen median_pr_lga = median(maize_price), by (lga)
-egen median_pr_sector = median(maize_price), by (sector)
 egen median_pr_state = median(maize_price), by (state)
 egen median_pr_zone = median(maize_price), by (zone)
 
 egen num_pr_ea = count(maize_price), by (ea)
 egen num_pr_lga = count(maize_price), by (lga)
-egen num_pr_sector = count(maize_price), by (sector)
 egen num_pr_state = count(maize_price), by (state)
 egen num_pr_zone = count(maize_price), by (zone)
 
@@ -607,50 +601,32 @@ tab num_pr_zone
 
 gen maize_price_mr = maize_price
 
-replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=5
+replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=2
 tab maize_price_mr,missing
 
-replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=5
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_sector if maize_price_mr==. & num_pr_sector>=5
+replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=2
 tab maize_price_mr,missing
 
-replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=5
+replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=2
 tab maize_price_mr,missing
 
-replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=5
+replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=2
 tab maize_price_mr,missing
 
 
 
-*********Getting the price for rice only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//   Kilogram       1
-//   gram        	0.001
-//	 litre     		1
-//	 cenlitre     	0.01
-//	 congo          1.5
-//	 derica         0.75
-//	 mudu           0.30
-//	 pieces	        0.35
+****************
+*rice price
+***************
 
 
-
-
-gen food_price_rice = s7bq3a* conversion if item_cd==13
-
-gen rice_price = s7bq4/food_price_rice if item_cd==13 
-
-*br  s7bq3b conversion s7bq3a food_price_rice s7bq4 rice_price item_cd if item_cd<=17
-
+gen rice_price=c8q2 if item_cd==7
+tab rice_price,missing
 sum rice_price,detail
 tab rice_price
 
-replace rice_price = 900 if rice_price >900 & rice_price<.
-replace rice_price = 25 if rice_price< 25
+replace rice_price = 750 if rice_price >750 & rice_price<.   //bottom 2%
+*replace rice_price = 25 if rice_price< 25   //top 3%
 tab rice_price,missing
 
 
@@ -673,17 +649,24 @@ tab num_rice_zone
 
 gen rice_price_mr = rice_price
 
-replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=7
+replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=2
 tab rice_price_mr,missing
 
-replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=7
+replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=2
 tab rice_price_mr,missing
 
-replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=7
+replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=2
 tab rice_price_mr,missing
 
-replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=7
+replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=2
 tab rice_price_mr,missing
+
+
+sort zone state ea
+collapse (max) maize_price_mr rice_price_mr , by (zone state lga sector ea)
+
+
+save "${Nigeria_GHS_W2_created_data}\food_prices.dta", replace
 
 
 
@@ -691,6 +674,85 @@ tab rice_price_mr,missing
 **************
 *Net Buyers and Sellers
 ***************
+use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect7b_plantingw2.dta", clear
+merge m:1 zone state lga sector ea using "${Nigeria_GHS_W2_created_data}\food_prices.dta", keepusing ( maize_price_mr rice_price_mr)
+
+**********
+*maize
+*********
+egen median_pr_ea = median(maize_price), by (ea)
+egen median_pr_lga = median(maize_price), by (lga)
+egen median_pr_state = median(maize_price), by (state)
+egen median_pr_zone = median(maize_price), by (zone)
+
+egen num_pr_ea = count(maize_price), by (ea)
+egen num_pr_lga = count(maize_price), by (lga)
+egen num_pr_state = count(maize_price), by (state)
+egen num_pr_zone = count(maize_price), by (zone)
+
+tab num_pr_ea
+tab num_pr_lga
+tab num_pr_state
+tab num_pr_zone
+
+
+
+replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=2
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=2
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=2
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=2
+tab maize_price_mr,missing
+
+
+****************
+*rice price
+***************
+
+
+egen median_rice_ea = median(rice_price), by (ea)
+egen median_rice_lga = median(rice_price), by (lga)
+egen median_rice_state = median(rice_price), by (state)
+egen median_rice_zone = median(rice_price), by (zone)
+
+egen num_rice_ea = count(rice_price), by (ea)
+egen num_rice_lga = count(rice_price), by (lga)
+egen num_rice_state = count(rice_price), by (state)
+egen num_rice_zone = count(rice_price), by (zone)
+
+tab num_rice_ea
+tab num_rice_lga
+tab num_rice_state
+tab num_rice_zone
+
+
+
+replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=2
+tab rice_price_mr,missing
+
+replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=2
+tab rice_price_mr,missing
+
+replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=2
+tab rice_price_mr,missing
+
+replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=2
+tab rice_price_mr,missing
+
+
+
+
+
+
+**************
+*Net Buyers and Sellers
+***************
+
 *s7bq5a from purchases
 *s7bq6a from own production
 
@@ -884,6 +946,42 @@ save "${Nigeria_GHS_W2_created_data}\land_holding_2012.dta", replace
  
 
 
+*******************************
+*Soil Quality
+*******************************
+
+use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11b1_plantingw2.dta",clear 
+
+
+ren s11b1q45 soil_quality
+tab soil_quality, missing
+
+egen med_soil = median(soil_quality)
+
+
+egen med_soil_ea = median(soil_quality), by (ea)
+egen med_soil_lga = median(soil_quality), by (lga)
+egen med_soil_state = median(soil_quality), by (state)
+egen med_soil_zone = median(soil_quality), by (zone)
+
+replace soil_quality= med_soil_ea if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_lga if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_state if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_zone if soil_quality==.
+tab soil_quality, missing
+
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+
+replace soil_quality= 2 if soil_quality==1.5
+tab soil_quality, missing
+collapse (max) soil_quality, by (hhid)
+la var soil_quality "1=Good 2= fair 3=Bad "
+save "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", replace
+
 
 
 
@@ -911,6 +1009,10 @@ sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta", gen (safety)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta", gen (foodprices)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\geodata_2012.dta", gen (geodata)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", gen (soil)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta", gen (asset)
 sort hhid

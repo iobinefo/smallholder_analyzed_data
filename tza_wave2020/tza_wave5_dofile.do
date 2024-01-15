@@ -13,8 +13,8 @@ clear
 
 
 
-global tza_GHS_W5_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\TZA_2020_NPS-R5_v02_M_STATA14"
-global tza_GHS_W5_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020"
+global tza_GHS_W5_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\TZA_2020_NPS-R5_v02_M_STATA14"
+global tza_GHS_W5_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020"
 
 
 
@@ -808,6 +808,34 @@ save "${tza_GHS_W5_created_data}\land_holding_2020.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
+
+use "${tza_GHS_W5_raw_data}\ag_sec_3a.dta",clear 
+ren y5_hhid HHID
+
+ren ag3a_11 soil_quality
+tab soil_quality, missing
+egen med_soil = median(soil_quality)
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+collapse (max) soil_quality, by (HHID)
+la var soil_quality "1=Good 2= Average 3=Bad "
+save "${tza_GHS_W5_created_data}\soil_quality_2020.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
 ************************* Merging Agricultural Datasets ********************
 
 use "${tza_GHS_W5_created_data}\commercial_fert_2020.dta", replace
@@ -846,16 +874,16 @@ save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
 
 *****************Appending all Malawi Datasets*****************
-use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2010\tanzania_wave2_completedata_2010.dta",clear  
+use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2010\tanzania_wave2_completedata_2010.dta",clear  
 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012\tanzania_wave3_completedata_2012.dta" 
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012\tanzania_wave3_completedata_2012.dta" 
 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2014\tanzania_wave4_completedata_2014.dta" 
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2014\tanzania_wave4_completedata_2014.dta" 
 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020\tanzania_wave5_completedata_2020.dta" 
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020\tanzania_wave5_completedata_2020.dta" 
 
 
-save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Tanzania_complete_data.dta", replace
+save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Tanzania_complete_data.dta", replace
 
 
 

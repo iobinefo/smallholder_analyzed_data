@@ -13,8 +13,52 @@ clear
 
 
 
-global tza_GHS_W3_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\TZA_2012_NPS-R3_v01_M_STATA8_English_labels"
-global tza_GHS_W3_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012"
+global tza_GHS_W3_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\TZA_2012_NPS-R3_v01_M_STATA8_English_labels"
+global tza_GHS_W3_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012"
+
+
+
+
+
+
+
+
+
+
+************************
+*Geodata Variables
+************************
+
+use "${tza_GHS_W3_raw_data }\HouseholdGeovars_Y3.dta", clear
+
+ren y3_hhid HHID
+
+ren soil02 plot_slope
+ren soil01 plot_elevation
+ren soil03  plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+
+/*egen med_slope = median( plot_slope)
+egen med_elevation = median( plot_elevation)
+egen med_wetness = median( plot_wetness)
+
+
+
+replace plot_slope= med_slope if plot_slope==.
+replace plot_elevation= med_elevation if plot_elevation==.
+replace plot_wetness= med_wetness if plot_wetness==.*/
+
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (HHID)
+sort HHID
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${tza_GHS_W3_created_data}\geodata_2012.dta", replace
+
+
 
 
 ********************************
@@ -860,6 +904,21 @@ save "${tza_GHS_W3_created_data}\land_holding_2012.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
+
+use "${tza_GHS_W3_raw_data}\AG_SEC_3A.dta",clear 
+ren y3_hhid HHID
+
+ren ag3a_11 soil_quality
+tab soil_quality, missing
+egen med_soil = median(soil_quality)
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+collapse (max) soil_quality, by (HHID)
+la var soil_quality "1=Good 2= Average 3=Bad "
+save "${tza_GHS_W3_created_data}\soil_quality_2012.dta", replace
 
 
 
@@ -886,6 +945,10 @@ sort HHID
 merge 1:1 HHID using "${tza_GHS_W3_created_data}\safety_net_2012.dta", gen (safety)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W3_created_data}\food_prices_2012.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\geodata_2012.dta", gen (geodata)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W3_created_data}\soil_quality_2012.dta", gen (soil)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W3_created_data}\hhasset_value_2012.dta", gen (hhasset)
 sort HHID

@@ -13,8 +13,69 @@ clear
 
 
 
-global mwi_GHS_W2_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\MWI_2010-2019_IHPS_v06_M_Stata (1)"
-global mwi_GHS_W2_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013"
+global mwi_GHS_W2_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\MWI_2010-2019_IHPS_v06_M_Stata (1)"
+global mwi_GHS_W2_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013"
+
+
+
+
+
+
+
+
+
+************************
+*Geodata Variables
+************************
+
+use "${mwi_GHS_W2_raw_data}\PlotGeovariables_IHPS_13.dta", clear
+*merge 1:m case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+ren y2_hhid HHID
+
+ren slope  plot_slope
+ren elevation  plot_elevation
+ren twi   plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+egen med_slope_HHID = median( plot_slope), by (HHID)
+egen med_elevation_HHID = median( plot_elevation), by (HHID)
+egen med_wetness_HHID = median( plot_wetness), by (HHID)
+
+egen med_slope = median( plot_slope)
+egen med_elevation = median( plot_elevation)
+egen med_wetness = median( plot_wetness)
+
+replace plot_slope= med_slope_HHID if plot_slope==.
+replace plot_elevation= med_elevation_HHID if plot_elevation==.
+replace plot_wetness= med_wetness_HHID if plot_wetness==.
+
+replace plot_slope= med_slope if plot_slope==.
+replace plot_elevation= med_elevation if plot_elevation==.
+replace plot_wetness= med_wetness if plot_wetness==.
+
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (HHID)
+sort HHID
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${mwi_GHS_W2_created_data}\geodata_2013.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ********************************
@@ -129,6 +190,75 @@ keep occ y2_hhid region stratum district ta ea_id rural weight
 save "${mwi_GHS_W2_created_data}\hhids.dta", replace
 
 
+********************
+*Community Data
+********************
+use "${mwi_GHS_W2_raw_data}\com_mod_d_13.dta",clear 
+
+merge 1:m ea_id using  "${mwi_GHS_W2_created_data}\hhids.dta"
+
+
+*com_cd16a  distance to daily market   com_cd15 (1= market in commumity)
+*com_cd16b  units of distance to daily market
+*com_cd18a  distance to large weekly market  com_cd17 (1= market in commumity)
+*com_cd18b  units of distance to weekly market
+
+
+***daily market***
+gen mrk_dist = com_cd16a 
+tab mrk_dist,missing
+
+replace mrk_dist = 0.001*mrk_dist if com_cd16b==1
+*br com_cd16a com_cd16b mrk_dist
+egen median_case = median(mrk_dist), by (region district stratum  ea_id)
+egen median_district = median(mrk_dist), by (region district stratum )
+egen median_stratum = median(mrk_dist), by (region district)
+egen median_region = median(mrk_dist), by (region)
+
+
+replace mrk_dist =0 if mrk_dist==. & com_cd15==1
+tab mrk_dist, missing
+
+replace mrk_dist = median_case if mrk_dist==. 
+replace mrk_dist = median_district if mrk_dist==. 
+replace mrk_dist = median_stratum if mrk_dist==. 
+replace mrk_dist = median_region if mrk_dist==. 
+tab mrk_dist, missing
+
+replace mrk_dist= 48 if mrk_dist>=48 & mrk_dist<. 
+tab mrk_dist, missing
+
+***weekly market***
+gen mrk2_dist = com_cd18a 
+tab mrk2_dist,missing
+replace mrk2_dist = 0.001*mrk2_dist if com_cd18b==1 | com_cd18b==3
+*br com_cd16a com_cd16b mrk_dist
+
+egen median2_case = median(mrk2_dist), by (region district stratum  ea_id)
+egen median2_district = median(mrk2_dist), by (region district stratum)
+egen median2_stratum = median(mrk2_dist), by (region district)
+egen median2_region = median(mrk2_dist), by (region)
+
+
+replace mrk2_dist =0 if mrk2_dist==. & com_cd17==1
+tab mrk2_dist, missing
+
+replace mrk2_dist = median_case if mrk2_dist==. 
+replace mrk2_dist = median_district if mrk2_dist==. 
+replace mrk2_dist = median_stratum if mrk2_dist==. 
+replace mrk2_dist = median_region if mrk2_dist==. 
+tab mrk2_dist, missing
+
+
+sort region district stratum  ea_id
+collapse (max) mrk_dist mrk2_dist, by (y2_hhid region district stratum  ea_id)
+tab mrk_dist, missing
+tab mrk2_dist, missing
+la var mrk_dist "=distance to the daily market"
+la var mrk2_dist "=distance to the weekly market"
+
+
+save "${mwi_GHS_W2_created_data}\community", replace
 
 
 
@@ -139,7 +269,9 @@ save "${mwi_GHS_W2_created_data}\hhids.dta", replace
 ***********************************************
 
 use "${mwi_GHS_W2_raw_data}\ag_mod_f_13.dta",clear 
-merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta"
+merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta", gen (household)
+merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\community", keepusing (mrk_dist mrk2_dist)
+
 ren y2_hhid HHID
 *ag_f15 source of comercial fertilzer purchase1
 *ag_f25 source of comercial fertilzer purchase2
@@ -259,16 +391,16 @@ tab tpricefert_cens_mrk,missing
 ***********
 *organic fertilizer
 ***********
-gen org_fert = 1 if ag_f43==1
-tab org_fert,missing
-replace org_fert =0 if org_fert==.
+gen org_fert = (ag_f43==1)
 tab org_fert,missing
 
 
 
 
-collapse (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(HHID)
+collapse (sum) total_qty total_valuefert (max) mrk_dist mrk2_dist org_fert tpricefert_cens_mrk, by(HHID)
 label var org_fert  "1= if used organic fertilizer"
+la var mrk_dist "=distance to the daily market in km"
+la var mrk2_dist "=distance to the weekly market in km"
 label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
 label var tpricefert_cens_mrk  "price of commercial fertilizer purchased in naira"
@@ -356,6 +488,11 @@ save "${mwi_GHS_W2_created_data}\Extension_access_2013.dta", replace
 
 
 
+
+
+
+
+
 *********************************
 *Demographics 
 *********************************
@@ -367,6 +504,8 @@ use "${mwi_GHS_W2_raw_data}\hh_mod_b_13.dta",clear
 
 merge 1:1 y2_hhid PID using "${mwi_GHS_W2_raw_data}\hh_mod_c_13.dta", gen (household)
 merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta"
+
+
 ren y2_hhid HHID
 *hh_b03 sex 
 *hh_b04 relationshiop to head
@@ -858,19 +997,22 @@ save "${mwi_GHS_W2_created_data}\land_holding_2013.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
 
-*keep if area_acres_est !=. | area_acres_meas !=. //13,491 obs deleted - Keep if acreage or GPS measure info is available
-*keep case_id plot_id season area_acres_est area_acres_meas field_size 			
-*gen gps_meas = area_acres_meas!=. 
-*lab var gps_meas "Plot was measured with GPS, 1=Yes"
+use "${mwi_GHS_W2_raw_data}\ag_mod_d_13.dta" , clear
+ren y2_hhid HHID
 
-*lab var area_acres_meas "Plot are in acres (GPSd)"
-*lab var area_acres_est "Plot area in acres (estimated)"
-*gen area_est_hectares= area_acres_est* (1/2.47105)  
-*gen area_meas_hectares= area_acres_meas* (1/2.47105)
-*lab var area_meas_hectares "Plot are in hectares (GPSd)"
-*lab var area_est_hectares "Plot area in hectares (estimated)"
- 
+ren ag_d22 soil_quality
+tab soil_quality, missing
+egen med_soil = median(soil_quality)
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+collapse (max) soil_quality, by (HHID)
+la var soil_quality "1=Good 2= fair 3=poor "
+save "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", replace
+
 
 
 
@@ -900,6 +1042,10 @@ sort HHID
 merge 1:1 HHID using "${mwi_GHS_W2_created_data}\safety_net_2013.dta",  gen (safety)
 sort HHID
 merge 1:1 HHID using "${mwi_GHS_W2_created_data}\food_prices_2013.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${mwi_GHS_W2_created_data}\geodata_2013.dta", gen (geodata)
+sort HHID
+merge 1:1 HHID using "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", gen (soil)
 sort HHID
 merge 1:1 HHID using "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta",  gen (asset)
 sort HHID

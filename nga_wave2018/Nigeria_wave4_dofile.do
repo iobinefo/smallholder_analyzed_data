@@ -13,9 +13,30 @@ clear
 
 
 
-global Nigeria_GHS_W4_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\NGA_2018_GHSP-W4_v03_M_Stata12 (1)"
-global Nigeria_GHS_W4_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2018"
+global Nigeria_GHS_W4_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\NGA_2018_GHSP-W4_v03_M_Stata12 (1)"
+global Nigeria_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2018"
 
+
+
+************************
+*Geodata Variables
+************************
+
+use "${Nigeria_GHS_W4_raw_data}\nga_plotgeovariables_y4.dta", clear
+
+
+encode srtmslp_nga, gen( plot_slope)
+ren srtm_nga  plot_elevation
+ren twi_nw  plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (hhid)
+sort hhid
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", replace
 
 
 
@@ -584,7 +605,16 @@ gen food_price_maize = s7bq9a* s7bq9_cvn if item_cd==16
 
 gen maize_price  = s7bq10/food_price_maize if item_cd==16
 
-*br s7bq9b s7bq9a s7bq9_cvn  food_price_maize s7bq10 maize_price item_cd if item_cd<=27
+*br s7bq9b s7bq9a s7bq9_cvn  food_price_maize s7bq10 maize_price item_cd if item_cd<=16
+*br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=.
+ *br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==30
+ *tab s7bq2b if  item_cd==16 & s7bq2_cvn!=.
+ *br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==50
+
+*br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==20
+
+*br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==40
+
 
 sum maize_price,detail
 tab maize_price
@@ -870,6 +900,46 @@ save "${Nigeria_GHS_W4_created_data}\land_holding_2018.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
+
+use "${Nigeria_GHS_W4_raw_data}\sect11b1_plantingw4.dta",clear 
+
+
+ren s11b1q45 soil_quality
+tab soil_quality, missing
+
+egen med_soil = median(soil_quality)
+
+
+egen med_soil_ea = median(soil_quality), by (ea)
+egen med_soil_lga = median(soil_quality), by (lga)
+egen med_soil_state = median(soil_quality), by (state)
+egen med_soil_zone = median(soil_quality), by (zone)
+
+replace soil_quality= med_soil_ea if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_lga if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_state if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_zone if soil_quality==.
+tab soil_quality, missing
+
+replace soil_quality= 2 if soil_quality==1.5
+tab soil_quality, missing
+
+
+
+collapse (max) soil_quality, by (hhid)
+la var soil_quality "1=Good 2= fair 3=Bad "
+save "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", replace
+
+
+
+
+
 
 
 
@@ -897,6 +967,10 @@ merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\safety_net_2018.dta", gen (
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\food_prices_2018.dta", gen (foodprices)
 sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", gen (soil)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", gen (geodata)
+sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\household_asset_2018.dta", gen (asset)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\land_holding_2018.dta"
@@ -915,17 +989,17 @@ save "${Nigeria_GHS_W4_created_data}\Nigeria_wave4_completedata_2018.dta", repla
 
 
 *****************Appending all Nigeria Datasets*****************
-use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2010\Nigeria_wave1_complete_data.dta",clear
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\Nigeria_wave2_complete_data.dta.dta" 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2015\Nigeria_wave3_completedata_2015.dta" 
-append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2018\Nigeria_wave4_completedata_2018.dta"
+use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2010\Nigeria_wave1_complete_data.dta",clear
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\Nigeria_wave2_complete_data.dta.dta" 
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2015\Nigeria_wave3_completedata_2015.dta" 
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2018\Nigeria_wave4_completedata_2018.dta"
 
 egen fert_distance = median( dist_cens_mrk), by (hhid)
 replace dist_cens_mrk = fert_distance if dist_cens_mrk==.
 
 
 
-save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Nigeria_complete_data.dta", replace
+save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Nigeria_complete_data.dta", replace
 
 
 

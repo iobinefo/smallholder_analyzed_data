@@ -13,8 +13,72 @@ clear
 
 
 
-global Nigeria_GHS_W3_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\NGA_2015_GHSP-W3_v02_M_Stata"
-global Nigeria_GHS_W3_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2015"
+global Nigeria_GHS_W3_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\NGA_2015_GHSP-W3_v02_M_Stata"
+global Nigeria_GHS_W3_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2015"
+
+
+
+************************
+*Geodata Variables
+************************
+
+use "${Nigeria_GHS_W3_raw_data}\NGA_PlotGeovariables_Y3.dta", clear
+
+
+ren srtmslp_nga plot_slope
+ren srtm_nga  plot_elevation
+ren twi_nga   plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+egen med_slope_ea = median( plot_slope),by (ea)
+egen med_slope_lga = median( plot_slope),by (lga)
+egen med_slope_state = median( plot_slope),by (state)
+egen med_slope_zone = median( plot_slope),by (zone)
+egen med_elevation_ea = median( plot_elevation), by (ea)
+egen med_elevation_lga = median( plot_elevation), by (lga)
+egen med_elevation_state = median( plot_elevation), by (state)
+egen med_elevation_zone = median( plot_elevation), by (zone)
+egen med_wetness_ea = median( plot_wetness), by (ea)
+egen med_wetness_lga = median( plot_wetness), by (lga)
+egen med_wetness_state = median( plot_wetness), by (state)
+egen med_wetness_zone = median( plot_wetness), by (zone)
+
+replace plot_slope= med_slope_ea if plot_slope==.
+replace plot_slope= med_slope_lga if plot_slope==.
+replace plot_slope= med_slope_state if plot_slope==.
+replace plot_slope= med_slope_zone if plot_slope==.
+replace plot_elevation= med_elevation_ea if plot_elevation==.
+replace plot_elevation= med_elevation_lga if plot_elevation==.
+replace plot_elevation= med_elevation_state if plot_elevation==.
+replace plot_elevation= med_elevation_zone if plot_elevation==.
+replace plot_wetness= med_wetness_ea if plot_wetness==.
+replace plot_wetness= med_wetness_lga if plot_wetness==.
+replace plot_wetness= med_wetness_state if plot_wetness==.
+replace plot_wetness= med_wetness_zone if plot_wetness==.
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (hhid)
+sort hhid
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${Nigeria_GHS_W3_created_data}\geodata_2015.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ****************************
@@ -1014,6 +1078,42 @@ save "${Nigeria_GHS_W3_created_data}\land_holding_2015.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
+
+use "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3.dta",clear 
+
+
+ren s11b1q45 soil_quality
+tab soil_quality, missing
+
+egen med_soil = median(soil_quality)
+
+
+/*egen med_soil_ea = median(soil_quality), by (ea)
+egen med_soil_lga = median(soil_quality), by (lga)
+egen med_soil_state = median(soil_quality), by (state)
+egen med_soil_zone = median(soil_quality), by (zone)
+
+replace soil_quality= med_soil_ea if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_lga if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_state if soil_quality==.
+tab soil_quality, missing
+replace soil_quality= med_soil_zone if soil_quality==.
+tab soil_quality, missing
+*/
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+
+
+
+collapse (max) soil_quality, by (hhid)
+la var soil_quality "1=Good 2= fair 3=Bad "
+save "${Nigeria_GHS_W3_created_data}\soil_quality_2015.dta", replace
+
 
 
 
@@ -1042,6 +1142,10 @@ sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W3_created_data}\safety_net_2015.dta", gen (safety)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W3_created_data}\food_prices_2015.dta", gen (foodprices)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W3_created_data}\geodata_2015.dta", gen (geodata)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W3_created_data}\soil_quality_2015.dta", gen (soil)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W3_created_data}\household_asset_2015.dta", gen (asset)
 sort hhid

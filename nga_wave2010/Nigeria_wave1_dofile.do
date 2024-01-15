@@ -2,16 +2,38 @@
 
 clear
 
-global Nigeria_GHS_W1_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\NGA_2010_GHSP-W1_v03_M_STATA (1)" 
-global Nigeria_GHS_W1_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2010"
+global Nigeria_GHS_W1_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\NGA_2010_GHSP-W1_v03_M_STATA (1)" 
+global Nigeria_GHS_W1_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2010"
 
 
 
 
+************************
+*Geodata Variables
+************************
+use "${Nigeria_GHS_W1_raw_data}\Geodata\NGA_PlotGeovariables_Y1.dta", clear
 
 
+ren srtmslp_nga plot_slope
+ren srtm_nga  plot_elevation
+ren twi_nga   plot_wetness
 
+tab1 plot_slope plot_elevation plot_wetness, missing
 
+egen med_slope = median( plot_slope)
+egen med_elevation = median( plot_elevation)
+egen med_wetness = median( plot_wetness)
+
+replace plot_slope= med_slope if plot_slope==.
+replace plot_elevation= med_elevation if plot_elevation==.
+replace plot_wetness= med_wetness if plot_wetness==.
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (hhid)
+sort hhid
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${Nigeria_GHS_W1_created_data}\geodata.dta", replace
 
 
 ****************************
@@ -518,10 +540,12 @@ save "${Nigeria_GHS_W1_created_data}\safety_net.dta", replace
 **************************************
 *Food Prices
 **************************************
-use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect7b_plantingw1.dta", clear
+
+
+use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Community\sectc2_plantingw1.dta", clear
 
 *s7bq3a   qty purchased by household (7days)
-*s7bq3b s7bq3c     units purchased by household (7days)
+*sc2q3c     units purchased by household (7days)
 *s7bq4    cost of purchase by household (7days)
 
 
@@ -529,35 +553,48 @@ use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect7b_plantingw1
 
 *********Getting the price for maize only**************
 //   Unit           Conversion Factor for maize
-//   Kilogram       1
-//   gram        	0.001
-//	 litre     		1
-//	 millilitre     0.001
-//	 pieces	        0.35
+
+
+
+
+
+
 
 gen conversion =1
-replace conversion=1 if s7bq3b==1 | s7bq3b ==3
 tab conversion, missing
 gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*0.001 if s7bq3b==2 |	s7bq3b==4 
-replace conversion = food_size*0.35 if s7bq3b==5								
+replace conversion = food_size*0.087 if sc2q3c== 1
+replace conversion = food_size*0.175 if  sc2q3c== 2		
+replace conversion = food_size*0.23 if  sc2q3c== 3
+replace conversion = food_size*0.35 if  sc2q3c== 4	
+replace conversion = food_size*0.70 if  sc2q3c== 5
+replace conversion = food_size*1.50 if  sc2q3c== 6
+replace conversion = food_size*3.00 if  sc2q3c== 7
+replace conversion = food_size*20.0 if  sc2q3c== 11	
+replace conversion = food_size*50.0 if  sc2q3c== 12
+replace conversion = food_size*100 if   sc2q3c== 13	
+replace conversion = food_size*120 if   sc2q3c== 14
+replace conversion = food_size*30.0 if  sc2q3c== 22		
+replace conversion = food_size*10.0 if  sc2q3c== 31
+replace conversion = food_size*25 if   sc2q3c== 32	
+replace conversion = food_size*40 if   sc2q3c== 33
+replace conversion = food_size*3.0 if  sc2q3c== 51					
 tab conversion, missing	
 
 
 
-gen food_price_maize = s7bq3a* conversion if item_cd==12
+gen food_price_maize = sc2q3b* conversion if item_cd==12
 
-gen maize_price_2010 = s7bq4/food_price_maize if item_cd==12  
+gen maize_price = sc2q3a/food_price_maize if item_cd==12  
 
-*br  s7bq3b conversion s7bq3a s7bq4  food_price_maize maize_price_2010 item_cd if item_cd<=17
+*br  sc2q3b conversion sc2q3c sc2q3a  food_price_maize maize_price item_cd if item_cd<=17
 
 tab maize_price,missing
 sum maize_price,detail
 tab maize_price
 
-replace maize_price = 200 if maize_price >200 & maize_price<.
-replace maize_price = 17 if maize_price< 17
-tab maize_price,missing
+replace maize_price = 170 if maize_price >170 & maize_price<.  //bottom 5%
+replace maize_price = 10 if maize_price< 10        ////top 5%
 
 
 
@@ -579,48 +616,39 @@ tab num_pr_zone
 
 gen maize_price_mr = maize_price
 
-replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=7
+replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=2
 tab maize_price_mr,missing
 
-replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=7
+replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=2
 tab maize_price_mr,missing
 
-replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=7
+replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=2
 tab maize_price_mr,missing
 
-replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=7
+replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=2
 tab maize_price_mr,missing
 
 
 
 *********Getting the price for rice only**************
 //   Unit           Conversion Factor for maize
-//   Kilogram       1
-//   gram        	0.001
-//	 litre     		1
-//	 millilitre     0.001
-//	 pieces	        0.001
-
-gen conversion2 =1
-replace conversion2=1 if s7bq3b==1 | s7bq3b ==3
-tab conversion2, missing
-gen food_size2=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion2 = food_size*0.001 if s7bq3b==2 |s7bq3b==4 | s7bq3b==5								
-tab conversion2, missing	
 
 
 
-gen food_price_rice = s7bq3a* conversion2 if item_cd==13
 
-gen rice_price = s7bq4/food_price_rice if item_cd==13 
 
-*br  s7bq3b conversion2 s7bq3a food_price_rice s7bq4 rice_price_2010 item_cd if item_cd<=17
+
+gen food_price_rice = sc2q3b* conversion if item_cd==14
+
+gen rice_price = sc2q3a/food_price_rice if item_cd==14
+
+*br  sc2q3b conversion sc2q3c sc2q3a  food_price_rice rice_price item_cd if item_cd==14
 
 sum rice_price,detail
 tab rice_price
 
-replace rice_price = 350 if rice_price >350 & rice_price<.
-replace rice_price = 20 if rice_price< 20
+replace rice_price = 300 if rice_price >300 & rice_price<.   //bottom 3%
+replace rice_price = 25 if rice_price< 25   //top 3%
 tab rice_price,missing
 
 
@@ -656,10 +684,42 @@ replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=7
 tab rice_price_mr,missing
 
 
+sort zone state ea
+collapse (max) maize_price_mr rice_price_mr  median_pr_lga median_pr_state median_pr_zone median_pr_ea , by (zone state lga sector ea)
+
+
+save "${Nigeria_GHS_W1_created_data}\food_prices.dta", replace
+
+
 
 **************
 *Net Buyers and Sellers
 ***************
+use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect7b_plantingw1.dta", clear
+merge m:1 zone state lga sector ea using "${Nigeria_GHS_W1_created_data}\food_prices.dta", keepusing (median_pr_ea median_pr_lga median_pr_state median_pr_zone maize_price_mr rice_price_mr)
+
+**************
+*maize price
+*************
+
+replace maize_price_mr = median_pr_ea if maize_price_mr==.
+tab maize_price_mr, missing
+
+replace maize_price_mr = median_pr_lga if maize_price_mr==.
+tab maize_price_mr, missing
+
+replace maize_price_mr = median_pr_state if maize_price_mr==.
+tab maize_price_mr, missing
+
+replace maize_price_mr = median_pr_zone if maize_price_mr==.
+tab maize_price_mr, missing
+
+
+
+
+
+
+
 *s7bq3a from purchases
 *s7bq5a from own production
 
@@ -682,13 +742,13 @@ replace net_buyer=0 if net_buyer==.
 tab net_buyer,missing
 
 
-collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(hhid)
-la var net_seller "1= if respondent is a net seller"
-la var net_buyer "1= if respondent is a net buyer"
+collapse  (max) maize_price_mr rice_price_mr net_seller net_buyer, by(hhid)
 label var maize_price_mr "commercial price of maize in naira"
 label var rice_price_mr "commercial price of rice in naira"
+la var net_seller "1= if respondent is a net seller"
+la var net_buyer "1= if respondent is a net buyer"
 sort hhid
-save "${Nigeria_GHS_W1_created_data}\food_prices.dta", replace
+save "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", replace
 
 
 *****************************
@@ -713,6 +773,7 @@ save "${Nigeria_GHS_W1_created_data}\assest_cost.dta", replace
 *******************Merging assest***********************
 sort hhid item_cd
 merge 1:1 hhid item_cd using "${Nigeria_GHS_W1_created_data}\assest_qty.dta"
+
 drop _merge
 gen hhasset_value = s5q4*s5q1
 collapse (sum) hhasset_value, by (hhid)
@@ -895,7 +956,9 @@ merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\safety_net.dta", gen (safet
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\assest_value.dta", gen (asset)
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\food_prices.dta", gen (foodprices)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", gen (foodprices)
+sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\geodata.dta", gen (geodata)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\land_holdings.dta"
 gen year = 2010

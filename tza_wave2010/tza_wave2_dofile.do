@@ -13,8 +13,51 @@ clear
 
 
 
-global tza_GHS_W2_raw_data 		"C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\TZA_2010_NPS-R2_v02_M_STATA8"
-global tza_GHS_W2_created_data  "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2010"
+global tza_GHS_W2_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\TZA_2010_NPS-R2_v02_M_STATA8"
+global tza_GHS_W2_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2010"
+
+
+
+
+
+************************
+*Geodata Variables
+************************
+
+use "${tza_GHS_W2_raw_data }\HH.Geovariables_Y2.dta", clear
+
+ren y2_hhid HHID
+
+ren soil02 plot_slope
+ren soil01 plot_elevation
+ren soil03  plot_wetness
+
+tab1 plot_slope plot_elevation plot_wetness, missing
+
+
+egen med_slope = median( plot_slope)
+egen med_elevation = median( plot_elevation)
+egen med_wetness = median( plot_wetness)
+
+
+
+replace plot_slope= med_slope if plot_slope==.
+replace plot_elevation= med_elevation if plot_elevation==.
+replace plot_wetness= med_wetness if plot_wetness==.
+
+
+collapse (sum) plot_slope plot_elevation plot_wetness, by (HHID)
+sort HHID
+la var plot_slope "slope of plot"
+la var plot_elevation "Elevation of plot"
+la var plot_wetness "Potential wetness index of plot"
+save "${tza_GHS_W2_created_data}\geodata_2010.dta", replace
+
+
+
+
+
+
 
 
 ********************************
@@ -120,7 +163,7 @@ save "${tza_GHS_W2_created_data}\hhids.dta", replace
 use "${tza_GHS_W2_raw_data }\AG_SEC3A.dta",clear 
 
 merge 1:1 y2_hhid plotnum using "${tza_GHS_W2_raw_data }\AG_SEC3B.dta", gen (fertilizer)
-merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta"
+merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta",gen (hhids)
 
 ren y2_hhid HHID
 
@@ -364,6 +407,7 @@ save "${tza_GHS_W2_created_data}\credit_access_2010.dta", replace
 
 
 use "${tza_GHS_W2_raw_data}\AG_SEC12B.dta",clear 
+
 ren y2_hhid HHID
 ren ag12b_07 ext_acess
 
@@ -390,6 +434,7 @@ use "${tza_GHS_W2_raw_data}\HH_SEC_B.dta",clear
 
 merge 1:1 y2_hhid indidy2 using "${tza_GHS_W2_raw_data}\HH_SEC_C.dta", gen (household)
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta"
+
 ren y2_hhid HHID
 *hh_b02 sex 
 *hh_b05 relationshiop to head
@@ -557,84 +602,71 @@ save "${tza_GHS_W2_created_data}\safety_net_2010.dta", replace
 **************************************
 *Food Prices
 **************************************
-use "${tza_GHS_W2_raw_data}\HH_SEC_K1.dta",clear 
-merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta"
-ren y2_hhid HHID
-*hh_k03_2   qty purchased by household (7days)
-*hh_k03_1    units purchased by household (7days)
-*hh_k04    cost of purchase by household (7days)
+use "${tza_GHS_W2_raw_data}\COMSEC_CJ.dta",clear
 
-
-
-
+ren id_04 ea
+ren id_03 ward
+ren id_02 district
+ren id_01 region
 *********Getting the price for maize only**************
 
 //   Unit           Conversion Factor for maize
 //1. Kilogram       1
 //18.gram        	0.001
-//15.litre     		1
-//19.millitre       0.001
-//9. pieces	        0.35
+
 
 gen conversion =1
-replace conversion=1 if hh_k03_1==1 | hh_k03_1 ==3
+replace conversion=1 if cm_j01a ==1 & itemid=="104"
 gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*0.001 if hh_k03_1==2 |hh_k03_1==4 
-replace conversion = food_size*0.35 if hh_k03_1==5
-			
-tab conversion, missing
+replace conversion = food_size*0.001 if cm_j01a ==2 & itemid=="104"
 
-label list itemcode
 
-gen food_price_maize = hh_k03_2* conversion if itemcode==104
 
-gen maize_price  = hh_k04/food_price_maize if itemcode==104
+gen food_price_maize = cm_j01b* conversion if itemid=="104"
 
-*br hh_k03_1 conversion hh_k03_2 hh_k04 food_price_maize maize_price itemcode if itemcode<=500
+gen maize_price  = cm_j01c/food_price_maize if itemid=="104"
+
+*br cm_j01a conversion cm_j01b cm_j01c food_price_maize maize_price itemname if itemid=="104"
 
 sum maize_price,detail
-tab maize_price
+tab maize_price, missing
 
-*replace maize_price = 600 if maize_price >600 & maize_price<.
+replace maize_price = 800 if maize_price >800 & maize_price<.
 *replace maize_price = 50 if maize_price< 50
 tab maize_price,missing
 
-egen median_pr_ea_id = median(maize_price), by (ea)
+egen median_pr_ea_id = median(maize_price), by (region district ward ea)
+egen median_pr_ward  = median(maize_price), by (region district ward )
+egen median_pr_district  = median(maize_price), by (region district )
 egen median_pr_region  = median(maize_price), by (region )
-egen median_pr_stratum  = median(maize_price), by (strataid )
-egen median_pr_district  = median(maize_price), by (district )
 
 
 
 
-egen num_pr_ea_id = count(maize_price), by (ea)
-egen num_pr_region = count(maize_price), by (region )
-egen num_pr_stratum = count(maize_price), by (strataid )
-egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_ea_id = count(maize_price), by (region district ward ea)
+egen num_pr_ward = count(maize_price), by (region district ward)
+egen num_pr_district = count(maize_price), by (region district )
+egen num_pr_region  = count(maize_price), by (region )
 
 
 
 
 tab num_pr_ea_id
-tab num_pr_region
-tab num_pr_stratum
+tab num_pr_ward
 tab num_pr_district
-
+tab num_pr_region
 
 
 
 gen maize_price_mr  = maize_price
 
-replace maize_price_mr = median_pr_ea_id if maize_price_mr==. & num_pr_ea_id >= 16
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+replace maize_price_mr = median_pr_ward if maize_price_mr==. 
 tab maize_price_mr,missing
-replace maize_price_mr = median_pr_region if maize_price_mr==. & num_pr_region>= 16
+replace maize_price_mr = median_pr_district if maize_price_mr==.  
 tab maize_price_mr,missing
-replace maize_price_mr = median_pr_stratum if maize_price_mr==.  & num_pr_stratum>= 16
+replace maize_price_mr = median_pr_region if maize_price_mr==.
 tab maize_price_mr,missing
-replace maize_price_mr = median_pr_district if maize_price_mr==. & num_pr_district>= 16
-tab maize_price_mr,missing
-
-
 
 
 
@@ -645,23 +677,25 @@ replace maize_price_mr = mid_price if maize_price_mr==.
 tab maize_price_mr,missing
 
 
-
-*********Getting the price for rice only**************
+*********Getting the price for maize only**************
 
 //   Unit           Conversion Factor for maize
 //1. Kilogram       1
 //18.gram        	0.001
-//15.litre     		1
-//19.millitre       0.001
-//9. pieces	        0.35
+
+
+gen conversion2 =1
+replace conversion2=1 if cm_j01a ==1 & itemid=="101"
+gen food_size2=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
+replace conversion2 = food_size2*0.001 if cm_j01a ==2 & itemid=="101"
 
 
 
-gen food_price_rice = hh_k03_2* conversion if itemcode==101
+gen food_price_rice = cm_j01b* conversion2 if itemid=="101"
 
-gen rice_price  = hh_k04/food_price_rice if itemcode==101
+gen rice_price  = cm_j01c/food_price_rice if itemid=="101"
 
-*br hh_k03_1 conversion hh_k03_2 hh_k04 food_price_rice rice_price itemcode if itemcode<=500
+*br cm_j01a conversion2 cm_j01b cm_j01c food_price_rice rice_price itemname if itemid=="101"
 
 sum rice_price,detail
 tab rice_price
@@ -671,46 +705,95 @@ tab rice_price
 *tab rice_price,missing
 
 
-egen medianr_pr_ea_id = median(rice_price), by (ea)
+egen medianr_pr_ea_id = median(rice_price), by (region district ward ea)
+egen medianr_pr_ward  = median(rice_price), by (region district ward)
+egen medianr_pr_district  = median(rice_price), by (region district)
 egen medianr_pr_region  = median(rice_price), by (region )
-egen medianr_pr_stratum  = median(rice_price), by (strataid)
-egen medianr_pr_district  = median(rice_price), by (district )
 
 
 
 
-egen numr_pr_ea_id = count(rice_price), by (ea)
-egen numr_pr_region = count(rice_price), by (region )
-egen numr_pr_stratum = count(rice_price), by (strataid )
-egen numr_pr_district  = count(rice_price), by (district )
+egen numr_pr_ea_id = count(rice_price), by (region district ward ea)
+egen numr_pr_ward = count(rice_price), by (region district ward )
+egen numr_pr_district = count(rice_price), by (region district )
+egen numr_pr_region  = count(rice_price), by (region )
 
 
 tab numr_pr_ea_id
-tab numr_pr_region
-tab numr_pr_stratum
+tab numr_pr_ward
 tab numr_pr_district
+tab numr_pr_region
+
 
 
 
 
 gen rice_price_mr  = rice_price
 
-replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. & numr_pr_ea_id >= 1
+replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==.
 tab rice_price_mr,missing
-replace rice_price_mr = medianr_pr_region if rice_price_mr==. & numr_pr_region>= 1
+replace rice_price_mr = medianr_pr_ward if rice_price_mr==. 
 tab rice_price_mr,missing
-replace rice_price_mr = medianr_pr_stratum if rice_price_mr==.  & numr_pr_stratum>= 1
+replace rice_price_mr = medianr_pr_district if rice_price_mr==.  
 tab rice_price_mr,missing
-replace rice_price_mr = medianr_pr_district if rice_price_mr==. & numr_pr_district>= 1
+replace rice_price_mr = medianr_pr_region if rice_price_mr==. 
 tab rice_price_mr,missing
 
 
 egen midr_price = median(rice_price)
-
-
 replace rice_price_mr = midr_price if rice_price_mr==.
 tab rice_price_mr,missing
 
+
+
+sort region district ea
+collapse  (max) maize_price_mr rice_price_mr, by(region district ward ea)
+save "${tza_GHS_W2_created_data}\food_2010.dta", replace
+
+
+
+
+****************************
+*HH_ids
+****************************
+
+use "${tza_GHS_W2_raw_data }\HH_SEC_A.dta" ,clear 
+ren y2_hhid HHID
+merge m:1 region district ward ea using "${tza_GHS_W2_created_data}\food_2010.dta",keepusing(maize_price_mr rice_price_mr)
+
+
+egen median_pr_ea_id = median(maize_price), by (region district ward ea)
+egen median_pr_ward  = median(maize_price), by (region district ward )
+egen median_pr_district  = median(maize_price), by (region district )
+egen median_pr_region  = median(maize_price), by (region )
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+replace maize_price_mr = median_pr_ward if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_district if maize_price_mr==.  
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_region if maize_price_mr==.
+tab maize_price_mr,missing
+
+egen medianr_pr_ea_id = median(rice_price), by (region district ward ea)
+egen medianr_pr_ward  = median(rice_price), by (region district ward)
+egen medianr_pr_district  = median(rice_price), by (region district)
+egen medianr_pr_region  = median(rice_price), by (region )
+
+
+replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==.
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_ward if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_district if rice_price_mr==.  
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_region if rice_price_mr==. 
+tab rice_price_mr,missing
+collapse  (max) maize_price_mr rice_price_mr, by(HHID)
+label var maize_price_mr"commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
+sort HHID
+save "${tza_GHS_W2_created_data}\food_prices_2010.dta", replace
 
 
 
@@ -718,6 +801,10 @@ tab rice_price_mr,missing
 **************
 *Net Buyers and Sellers
 ***************
+
+use "${tza_GHS_W2_raw_data}\HH_SEC_K1.dta",clear 
+merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta"
+ren y2_hhid HHID
 *hh_k03_2 from purchases
 *hh_k05_2 from own production
 
@@ -744,13 +831,12 @@ tab net_buyer,missing
 
 
 
-collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(HHID)
+collapse  (max) net_seller net_buyer, by(HHID)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr"commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
+
 sort HHID
-save "${tza_GHS_W2_created_data}\food_prices_2010.dta", replace
+save "${tza_GHS_W2_created_data}\net_buyer_2010.dta", replace
 
 
 
@@ -862,7 +948,21 @@ save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 
 
 
+*******************************
+*Soil Quality
+*******************************
 
+use "${tza_GHS_W2_raw_data}\AG_SEC3A.dta",clear 
+ren y2_hhid HHID
+
+ren ag3a_10 soil_quality
+tab soil_quality, missing
+egen med_soil = median(soil_quality)
+replace soil_quality= med_soil if soil_quality==.
+tab soil_quality, missing
+collapse (max) soil_quality, by (HHID)
+la var soil_quality "1=Good 2= Average 3=Bad "
+save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
 
 
 
@@ -892,6 +992,12 @@ sort HHID
 merge 1:1 HHID using "${tza_GHS_W2_created_data}\safety_net_2010.dta", gen (safety)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W2_created_data}\food_prices_2010.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\net_buyer_2010.dta", gen (net)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\soil_quality_2010.dta", gen (soil)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\geodata_2010.dta", gen (geodata)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W2_created_data}\hhasset_value_2010.dta", gen (hhasset)
 sort HHID
