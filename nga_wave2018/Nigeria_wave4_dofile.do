@@ -896,7 +896,9 @@ ren field_size land_holding
 label var land_holding "land holding in hectares"
 save "${Nigeria_GHS_W4_created_data}\land_holding_2018.dta", replace
 
- 
+
+
+
 
 
 
@@ -904,11 +906,73 @@ save "${Nigeria_GHS_W4_created_data}\land_holding_2018.dta", replace
 *Soil Quality
 *******************************
 
-use "${Nigeria_GHS_W4_raw_data}\sect11b1_plantingw4.dta",clear 
+//ALT IMPORTANT NOTE: As of W4, the implied area conversions for farmer estimated units (including hectares) are markedly different from previous waves. I recommend excluding plots that do not have GPS measured areas from any area-based productivity estimates.
+use "${Nigeria_GHS_W4_raw_data}/sect11a1_plantingw4.dta", clear
+*merging in planting section to get cultivated status
+merge 1:1 hhid plotid using "${Nigeria_GHS_W4_raw_data}/sect11b1_plantingw4.dta", nogen
+*merging in harvest section to get areas for new plots
+merge 1:1 hhid plotid using "${Nigeria_GHS_W4_raw_data}/secta1_harvestw4.dta", gen(plot_merge)
+ 
+ren s11aq4aa area_size
+ren s11aq4b area_unit
+ren sa1q11 area_size2 //GPS measurement, no units in file
+//ren sa1q9b area_unit2 //Not in file
+ren s11aq4c area_meas_sqm
+//ren sa1q9c area_meas_sqm2
+gen cultivate = s11b1q27 ==1 
+
+
+gen field_size= area_size if area_unit==6
+replace field_size = area_size*0.0667 if area_unit==4									//reported in plots
+replace field_size = area_size*0.404686 if area_unit==5		    						//reported in acres
+replace field_size = area_size*0.0001 if area_unit==7									//reported in square meters
+
+replace field_size = area_size*0.00012 if area_unit==1 & zone==1						//reported in heaps
+replace field_size = area_size*0.00016 if area_unit==1 & zone==2
+replace field_size = area_size*0.00011 if area_unit==1 & zone==3
+replace field_size = area_size*0.00019 if area_unit==1 & zone==4
+replace field_size = area_size*0.00021 if area_unit==1 & zone==5
+replace field_size = area_size*0.00012 if area_unit==1 & zone==6
+
+replace field_size = area_size*0.0027 if area_unit==2 & zone==1							//reported in ridges
+replace field_size = area_size*0.004 if area_unit==2 & zone==2
+replace field_size = area_size*0.00494 if area_unit==2 & zone==3
+replace field_size = area_size*0.0023 if area_unit==2 & zone==4
+replace field_size = area_size*0.0023 if area_unit==2 & zone==5
+replace field_size = area_size*0.00001 if area_unit==2 & zone==6
+
+replace field_size = area_size*0.00006 if area_unit==3 & zone==1						//reported in stands
+replace field_size = area_size*0.00016 if area_unit==3 & zone==2
+replace field_size = area_size*0.00004 if area_unit==3 & zone==3
+replace field_size = area_size*0.00004 if area_unit==3 & zone==4
+replace field_size = area_size*0.00013 if area_unit==3 & zone==5
+replace field_size = area_size*0.00041 if area_unit==3 & zone==6
+
+
+
+/*ALT 02.23.23*/ gen area_est = field_size
+*replacing farmer reported with GPS if available
+replace field_size = area_meas_sqm*0.0001 if area_meas_sqm!=.               				
+gen gps_meas = (area_meas_sqm!=.)
+la var gps_meas "Plot was measured with GPS, 1=Yes"
+
+keep zone state lga sector ea hhid plotid field_size
+
+merge 1:1 hhid plotid using "${Nigeria_GHS_W4_raw_data}\sect11b1_plantingw4.dta"
 
 
 ren s11b1q45 soil_quality
 tab soil_quality, missing
+order field_size soil_quality hhid 
+sort hhid
+
+
+*how to get them my max fieldsize
+/*egen max_fieldsize = max(field_size), by (hhid)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality hhid max_fieldsize
+sort hhid
+br */
 
 egen med_soil = median(soil_quality)
 
@@ -935,6 +999,30 @@ tab soil_quality, missing
 collapse (max) soil_quality, by (hhid)
 la var soil_quality "1=Good 2= fair 3=Bad "
 save "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

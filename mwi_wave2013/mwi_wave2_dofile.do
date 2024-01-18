@@ -65,6 +65,134 @@ save "${mwi_GHS_W2_created_data}\geodata_2013.dta", replace
 
 
 
+***************modifying conversion file
+
+use "C:\Users\obine\Downloads\ihs_seasonalcropconversion_factor_2020.dta", clear
+keep if crop_code==1 & condition==1
+destring unit_code, replace
+sort region crop_code unit_code
+save "${mwi_GHS_W2_created_data}\coversionfactor_for_maize_consumption.dta", replace
+
+
+
+
+**********************
+*HH_id
+**********************
+
+
+
+use "${mwi_GHS_W2_raw_data}\hh_mod_a_filt_13.dta",clear 
+rename hh_a10a ta
+rename hh_wgt weight
+rename region region
+lab var region "1=North, 2=Central, 3=South"
+gen rural = (reside==2)
+lab var rural "1=Household lives in a rural area"
+collapse (max) hh_a40c, by ( region district ea_id y2_hhid)  
+save "${mwi_GHS_W2_created_data}\hhid.dta", replace
+
+
+
+**************
+*food prices
+**************
+
+
+use "${mwi_GHS_W2_raw_data}\com_ck_10.dta" , clear
+
+*encode com_ck00b, gen (item_code)
+*label list item_code
+*br if item_code==20
+
+
+merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhid.dta", keepusing(region district ea_id)
+
+ren com_ck00a crop_code
+ren com_ck00b3 unit_code
+
+sort region crop_code unit_code
+drop _merge
+merge m:1 region crop_code unit_code using "${mwi_GHS_W1_created_data}\coversionfactor_for_maize_consumption.dta", keepusing(conversion)
+
+******************
+*Maize
+******************
+replace conversion = 1 if unit_code==1 & crop_code==1
+
+gen maize_unit = com_ck00b2*conversion if crop_code==1
+gen maize_pr = com_ck00b1 if crop_code==1
+
+gen maize_price= maize_pr/maize_unit
+tab maize_price
+sum maize_price, detail
+*br conversion maize_unit  maize_pr maize_price crop_code if crop_code==1
+tab maize_price, missing
+
+egen median_pr_ea_id = median(maize_price), by (ea_id)
+egen median_pr_district  = median(maize_price), by (district )
+egen median_pr_region  = median(maize_price), by (region )
+
+
+egen num_pr_ea_id = count(maize_price), by (ea_id)
+egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_region = count(maize_price), by (region )
+
+
+
+
+
+tab num_pr_ea_id
+tab num_pr_district
+tab num_pr_region
+
+
+gen maize_price_mr  = maize_price
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_district if maize_price_mr==. 
+tab maize_price_mr,missing
+
+
+replace maize_price_mr = median_pr_region if maize_price_mr==.
+tab maize_price_mr,missing
+
+*egen mid_price = median(maize_price)
+*replace maize_price_mr = mid_price if maize_price_mr==.
+*tab maize_price_mr,missing
+collapse (max) maize_price_mr, by (region district ea_id)
+
+label var maize_price_mr  "commercial price of maize in naira"
+sort region district ea_id
+save "${mwi_GHS_W1_created_data}\maize_pr.dta", replace
+
+
+
+**********************
+*HH
+**********************
+use "${mwi_GHS_W1_raw_data}\hh_mod_a_filt_10.dta",clear 
+
+rename hh_a01 district
+rename hh_a02 ta 
+rename hh_wgt weight
+gen rural = (reside==2)
+*ren reside stratum
+gen region = . 
+replace region=1 if inrange(district, 101, 107)
+replace region=2 if inrange(district, 201, 210)
+replace region=3 if inrange(district, 301, 315)
+lab var region "1=North, 2=Central, 3=South"
+lab var rural "1=Household lives in a rural area"
+
+keep HHID case_id ea_id district region
+sort region district ea_id
+merge m:1 ea_id using "${mwi_GHS_W1_created_data}\maize_pr.dta"
+
+
+
 
 
 

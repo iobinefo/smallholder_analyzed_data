@@ -1078,20 +1078,80 @@ save "${Nigeria_GHS_W3_created_data}\land_holding_2015.dta", replace
 
 
 
+
+
 *******************************
 *Soil Quality
 *******************************
 
-use "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3.dta",clear 
+use "${Nigeria_GHS_W3_raw_data}\sect11a1_plantingw3",clear 
+*merging in planting section to get cultivated status
+merge 1:1 hhid plotid using  "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3"
+*merging in harvest section to get areas for new plots
+merge 1:1 hhid plotid using "${Nigeria_GHS_W3_raw_data}\secta1_harvestw3.dta", gen(plot_merge)
+
+ 
+ren s11aq4a area_size
+ren s11aq4b area_unit
+ren sa1q9a area_size2
+ren sa1q9b area_unit2
+ren s11aq4c area_meas_sqm
+ren sa1q9c area_meas_sqm2
+
+gen cultivate = s11b1q27 ==1 
+*assuming new plots are cultivated
+replace cultivate = 1 if sa1q3==1
+
+
+******Merging data with the conversion factor
+merge m:1 zone area_unit using "${Nigeria_GHS_W3_created_data}\land_cf.dta", nogen keep(1 3) 
+
+
+ 
+ *farmer reported field size for post-planting
+gen field_size= area_size*conversion
+*replacing farmer reported with GPS if available
+replace field_size = area_meas_sqm*0.0001 if area_meas_sqm!=.               				
+gen gps_meas = (area_meas_sqm!=. | area_meas_sqm2!=.)
+la var gps_meas "Plot was measured with GPS, 1=Yes"
+*farmer reported field size for post-harvest added fields
+drop area_unit conversion
+ren area_unit2 area_unit
+
+ 
+ 
+ ***************Measurement in hectares for the additional plots from post-harvest************
+******Merging data with the conversion factor
+merge m:1 zone area_unit using "${Nigeria_GHS_W3_created_data}\land_cf.dta", nogen keep(1 3) 
+
+
+replace field_size= area_size2*conversion if field_size==.
+*replacing farmer reported with GPS if available
+replace field_size = area_meas_sqm2*0.0001 if area_meas_sqm2!=.               
+la var field_size "Area of plot (ha)"
+sum field_size, detail
+keep zone state lga sector ea hhid plotid field_size
+
+merge 1:1 hhid plotid using "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3.dta"
 
 
 ren s11b1q45 soil_quality
 tab soil_quality, missing
+order field_size soil_quality hhid 
+sort hhid
+
+
+*how to get them my max fieldsize
+/*egen max_fieldsize = max(field_size), by (hhid)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality hhid max_fieldsize
+sort hhid
+br */
 
 egen med_soil = median(soil_quality)
 
 
-/*egen med_soil_ea = median(soil_quality), by (ea)
+egen med_soil_ea = median(soil_quality), by (ea)
 egen med_soil_lga = median(soil_quality), by (lga)
 egen med_soil_state = median(soil_quality), by (state)
 egen med_soil_zone = median(soil_quality), by (zone)
@@ -1104,15 +1164,39 @@ replace soil_quality= med_soil_state if soil_quality==.
 tab soil_quality, missing
 replace soil_quality= med_soil_zone if soil_quality==.
 tab soil_quality, missing
-*/
+
 replace soil_quality= med_soil if soil_quality==.
 tab soil_quality, missing
 
-
-
+replace soil_quality= 2 if soil_quality==1.5
+tab soil_quality, missing
 collapse (max) soil_quality, by (hhid)
 la var soil_quality "1=Good 2= fair 3=Bad "
 save "${Nigeria_GHS_W3_created_data}\soil_quality_2015.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

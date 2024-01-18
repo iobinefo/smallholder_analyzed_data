@@ -946,15 +946,75 @@ save "${Nigeria_GHS_W2_created_data}\land_holding_2012.dta", replace
  
 
 
+
+
 *******************************
 *Soil Quality
 *******************************
 
-use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11b1_plantingw2.dta",clear 
+use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11a1_plantingw2",clear  
+*merging in planting section to get cultivated status
+
+merge 1:1 hhid plotid using  "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11b1_plantingw2"
+*merging in harvest section to get areas for new plots
+merge 1:1 hhid plotid using "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Agriculture\secta1_harvestw2.dta", gen(plot_merge)
+
+
+ren s11aq4a area_size
+ren s11aq4b area_unit
+ren sa1q9a area_size2
+ren sa1q9b area_unit2
+ren s11aq4c area_meas_sqm
+ren sa1q9c area_meas_sqm2
+gen cultivate = s11b1q27 ==1 
+*assuming new plots are cultivated
+replace cultivate = 1 if sa1q3==1
+
+******Merging data with the conversion factor
+merge m:1 zone area_unit using "${Nigeria_GHS_W2_created_data}\land_cf.dta", nogen keep(1 3) 
+
+
+gen field_size= area_size*conversion
+*replacing farmer reported with GPS if available
+replace field_size = area_meas_sqm*0.0001 if area_meas_sqm!=.               				
+gen gps_meas = (area_meas_sqm!=. | area_meas_sqm2!=.)
+la var gps_meas "Plot was measured with GPS, 1=Yes"
+ 
+ 
+ ***************Measurement in hectares for the additional plots from post-harvest************
+ *farmer reported field size for post-harvest added fields
+drop area_unit conversion
+ren area_unit2 area_unit
+******Merging data with the conversion factor
+merge m:1 zone area_unit using "${Nigeria_GHS_W2_created_data}\land_cf.dta", nogen keep(1 3) 
+
+
+replace field_size= area_size2*conversion if field_size==.
+*replacing farmer reported with GPS if available
+replace field_size = area_meas_sqm2*0.0001 if area_meas_sqm2!=.                
+la var field_size "Area of plot (ha)"
+sum field_size, detail
+*Total land holding including cultivated and rented out
+keep zone state lga sector ea hhid plotid field_size
+
+merge 1:1 hhid plotid using "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11b1_plantingw2.dta"
 
 
 ren s11b1q45 soil_quality
 tab soil_quality, missing
+
+
+
+*how to get them my max fieldsize
+egen max_fieldsize = max(field_size), by (hhid)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality hhid max_fieldsize
+sort hhid
+keep if field_size== max_fieldsize
+
+
+
+
 
 egen med_soil = median(soil_quality)
 
@@ -981,8 +1041,6 @@ tab soil_quality, missing
 collapse (max) soil_quality, by (hhid)
 la var soil_quality "1=Good 2= fair 3=Bad "
 save "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", replace
-
-
 
 
 

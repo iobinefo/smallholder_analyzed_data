@@ -42,15 +42,133 @@ save "${mwi_GHS_W1_created_data}\geodata_2010.dta", replace
 
 
 
+***************modifying conversion file
+
+use "C:\Users\obine\Downloads\ihs_seasonalcropconversion_factor_2020.dta", clear
+keep if crop_code==1 & condition==1
+destring unit_code, replace
+sort region crop_code unit_code
+save "${mwi_GHS_W1_created_data}\coversionfactor_for_maize_consumption.dta", replace
+
+
+**********************
+*HH_id
+**********************
+
+
+
+use "${mwi_GHS_W1_raw_data}\hh_mod_a_filt_10.dta",clear 
+
+rename hh_a01 district
+rename hh_a02 ta 
+rename hh_wgt weight
+gen rural = (reside==2)
+*ren reside stratum
+gen region = . 
+replace region=1 if inrange(district, 101, 107)
+replace region=2 if inrange(district, 201, 210)
+replace region=3 if inrange(district, 301, 315)
+lab var region "1=North, 2=Central, 3=South"
+lab var rural "1=Household lives in a rural area"
+
+collapse (max) hh_a32c_1, by (region district ea_id)
+save "${mwi_GHS_W1_created_data}\hhid.dta", replace
+
+
+
+
+**************
+*food prices
+**************
+
+
+use "${mwi_GHS_W1_raw_data}\com_ck_10.dta" , clear
+
+
+merge m:1 ea_id using  "${mwi_GHS_W1_created_data}\hhid.dta", keepusing(region district)
+
+ren com_ck00a crop_code
+ren com_ck00b3 unit_code
+
+sort region crop_code unit_code
+drop _merge
+merge m:1 region crop_code unit_code using "${mwi_GHS_W1_created_data}\coversionfactor_for_maize_consumption.dta", keepusing(conversion)
+
+******************
+*Maize
+******************
+replace conversion = 1 if unit_code==1 & crop_code==1
+
+gen maize_unit = com_ck00b2*conversion if crop_code==1
+gen maize_pr = com_ck00b1 if crop_code==1
+
+gen maize_price= maize_pr/maize_unit
+tab maize_price
+sum maize_price, detail
+*br conversion maize_unit  maize_pr maize_price crop_code if crop_code==1
+tab maize_price, missing
+
+egen median_pr_ea_id = median(maize_price), by (ea_id)
+egen median_pr_district  = median(maize_price), by (district )
+egen median_pr_region  = median(maize_price), by (region )
+
+
+egen num_pr_ea_id = count(maize_price), by (ea_id)
+egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_region = count(maize_price), by (region )
 
 
 
 
 
+tab num_pr_ea_id
+tab num_pr_district
+tab num_pr_region
+
+
+gen maize_price_mr  = maize_price
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_district if maize_price_mr==. 
+tab maize_price_mr,missing
+
+
+replace maize_price_mr = median_pr_region if maize_price_mr==.
+tab maize_price_mr,missing
+
+*egen mid_price = median(maize_price)
+*replace maize_price_mr = mid_price if maize_price_mr==.
+*tab maize_price_mr,missing
+collapse (max) maize_price_mr, by (region district ea_id)
+
+label var maize_price_mr  "commercial price of maize in naira"
+sort region district ea_id
+save "${mwi_GHS_W1_created_data}\maize_pr.dta", replace
 
 
 
+**********************
+*HH
+**********************
+use "${mwi_GHS_W1_raw_data}\hh_mod_a_filt_10.dta",clear 
 
+rename hh_a01 district
+rename hh_a02 ta 
+rename hh_wgt weight
+gen rural = (reside==2)
+*ren reside stratum
+gen region = . 
+replace region=1 if inrange(district, 101, 107)
+replace region=2 if inrange(district, 201, 210)
+replace region=3 if inrange(district, 301, 315)
+lab var region "1=North, 2=Central, 3=South"
+lab var rural "1=Household lives in a rural area"
+
+keep HHID case_id ea_id district region
+sort region district ea_id
+merge m:1 ea_id using "${mwi_GHS_W1_created_data}\maize_pr.dta"
 
 
 
@@ -121,9 +239,9 @@ replace region=2 if inrange(district, 201, 210)
 replace region=3 if inrange(district, 301, 315)
 lab var region "1=North, 2=Central, 3=South"
 lab var rural "1=Household lives in a rural area"
+
 keep case_id stratum district ta ea_id rural region weight 
 save "${mwi_GHS_W1_created_data}\hhids.dta", replace
-
 
 
 
@@ -592,166 +710,7 @@ save "${mwi_GHS_W1_created_data}\safety_net_2010.dta", replace
 **************************************
 *Food Prices
 **************************************
-use "${mwi_GHS_W1_raw_data}\hh_mod_g1_10.dta",clear 
-merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
-ren HHID HHID
-*hh_g04a   qty purchased by household (7days)
-*hh_g04b hh_g04b_os     units purchased by household (7days)
-*hh_g05    cost of purchase by household (7days)
 
-
-
-
-*********Getting the price for maize only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//1. Kilogram       1
-//18.gram        	0.001
-//15.litre     		1
-//2. 50kg     	    50
-//3. 90kg     	    90
-//4,5congo(pail)    1.5
-//17.derica(tin)    0.75
-//19.millitre       0.001
-//9. pieces	        0.35
-
-gen conversion =1
-replace conversion=1 if hh_g04b=="1" | hh_g04b =="15"
-gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*50 if hh_g04b=="2" 
-replace conversion = food_size*90 if hh_g04b=="3" 
-replace conversion = food_size*0.001 if hh_g04b=="18" |hh_g04b=="19" 
-replace conversion = food_size*1.5 if hh_g04b=="4" |	hh_g04b=="5"
-replace conversion = food_size*0.75 if hh_g04b=="17"
-replace conversion = food_size*0.35 if hh_g04b=="9"			
-tab conversion, missing
-
-*label list HH_G02
-
-gen food_price_maize = hh_g04a* conversion if hh_g02==104
-
-gen maize_price = hh_g05/food_price_maize if hh_g02==104
-
-*br hh_g04b conversion hh_g04a hh_g05 food_price_maize maize_price hh_g02 if hh_g02<=500
-
-sum maize_price,detail
-tab maize_price
-
-*replace maize_price = 600 if maize_price >600 & maize_price_2010<.
-*replace maize_price = 50 if maize_price< 50
-tab maize_price,missing
-
-
-egen median_pr_ea_id = median(maize_price), by (ea_id)
-egen median_pr_district  = median(maize_price), by (district )
-egen median_pr_stratum  = median(maize_price), by (stratum )
-egen median_pr_region  = median(maize_price), by (region )
-
-
-egen num_pr_ea_id = count(maize_price), by (ea_id)
-egen num_pr_district  = count(maize_price), by (district )
-egen num_pr_stratum = count(maize_price), by (stratum )
-egen num_pr_region = count(maize_price), by (region )
-
-
-
-
-
-tab num_pr_ea_id
-tab num_pr_district
-tab num_pr_stratum
-tab num_pr_region
-
-
-gen maize_price_mr  = maize_price
-
-replace maize_price_mr = median_pr_ea_id if maize_price_mr==. & num_pr_ea_id >= 3
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_district if maize_price_mr==. & num_pr_district>=3
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_stratum if maize_price_mr==.  & num_pr_stratum>=3
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_region if maize_price_mr==. & num_pr_region>=3
-tab maize_price_mr,missing
-
-egen mid_price = median(maize_price)
-
-
-replace maize_price_mr = mid_price if maize_price_mr==.
-tab maize_price_mr,missing
-
-
-*********Getting the price for rice only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//1. Kilogram       1
-//18.gram        	0.001
-//15.litre     		1
-//2. 50kg     	    50
-//3. 90kg     	    90
-//4,5congo(pail)    1.5
-//17.derica(tin)    0.75
-//19.millitre       0.001
-//9. pieces	        0.35
-
-
-
-
-gen food_price_rice = hh_g04a* conversion if hh_g02==106
-
-gen rice_price  = hh_g05/food_price_rice if hh_g02==106
-
-*br hh_g04b conversion hh_g04a hh_g05 food_price_rice rice_price hh_g02 if hh_g02<=500
-
-sum rice_price,detail
-tab rice_price
-
-*replace rice_price = 1000 if rice_price >1000 & rice_price_2010<.
-*replace rice_price = 30 if rice_price< 30
-tab rice_price,missing
-
-
-egen medianr_pr_ea_id = median(rice_price), by (ea_id)
-egen medianr_pr_district  = median(rice_price), by (district )
-egen medianr_pr_stratum  = median(rice_price), by (stratum )
-egen medianr_pr_region  = median(rice_price), by (region )
-
-
-egen numr_pr_ea_id = count(rice_price), by (ea_id)
-egen numr_pr_district  = count(rice_price), by (district )
-egen numr_pr_stratum = count(rice_price), by (stratum )
-egen numr_pr_region = count(rice_price), by (region )
-
-
-
-
-
-tab numr_pr_ea_id
-tab numr_pr_district
-tab numr_pr_stratum
-tab numr_pr_region
-
-
-gen rice_price_mr  = rice_price
-
-replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. & numr_pr_ea_id >= 12
-tab rice_price_mr,missing
-
-replace rice_price_mr = medianr_pr_district if rice_price_mr==. & numr_pr_district>= 12
-tab rice_price_mr,missing
-
-replace rice_price_mr = medianr_pr_stratum if rice_price_mr==.  & numr_pr_stratum>= 12
-tab rice_price_mr,missing
-
-replace rice_price_mr = medianr_pr_region if rice_price_mr==. & numr_pr_region>= 12
-tab rice_price_mr,missing
 
 
 
@@ -759,6 +718,9 @@ tab rice_price_mr,missing
 **************
 *Net Buyers and Sellers
 ***************
+use "${mwi_GHS_W1_raw_data}\hh_mod_g1_10.dta",clear 
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+ren HHID HHID
 *hh_g04a from purchases
 *hh_g06a from own production
 
@@ -784,11 +746,9 @@ tab net_buyer,missing
 
 
 
-collapse  (max) net_seller net_buyer maize_price_mr  rice_price_mr, by(HHID)
+collapse  (max) net_seller net_buyer, by(HHID)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr  "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
 sort HHID
 save "${mwi_GHS_W1_created_data}\food_prices_2010.dta", replace
 
@@ -993,25 +953,29 @@ gen field_size= (area_acres_est* (1/2.47105))
 replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
 
 ren HHID HHID
-keep field_size HHID case_id
+keep HHID plot_id field_size case_id ea_id
+collapse (max) field_size, by (HHID)
 save "${mwi_GHS_W1_created_data}\field_size.dta", replace
 
-use "${mwi_GHS_W1_raw_data}\ag_mod_d_10.dta" , clear
-merge m:m HHID using "${mwi_GHS_W1_created_data}\field_size.dta"*/
-
 
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_d_10.dta" , clear
+ren ag_d00 plot_id
 ren HHID HHID
 
+merge m:1 HHID using "${mwi_GHS_W1_created_data}\field_size.dta"
+
 ren ag_d22 soil_quality
+
+order HHID plot_id field_size soil_quality
+
 egen med_soil = median(soil_quality)
 replace soil_quality= med_soil if soil_quality==.
 tab soil_quality, missing
 
 collapse (max) soil_quality, by (HHID)
 la var soil_quality "1=Good 2= fair 3=poor "
-save "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", replace
+save "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", replace */
 
 
 

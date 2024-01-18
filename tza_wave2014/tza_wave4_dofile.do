@@ -17,6 +17,22 @@ global tza_GHS_W4_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms ST
 global tza_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2014"
 
 
+
+*****food prices
+use "${tza_GHS_W4_raw_data }\com_sec_cg.dta",clear
+
+tab cm_g_unit if item_code==104
+br cm_g_unit cm_g_weight cm_g_price item_name if item_code==104
+
+
+
+
+
+
+
+
+
+
 ********************************
 *Subsidized Fertilizer 
 ********************************

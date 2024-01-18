@@ -42,6 +42,232 @@ save "${tza_GHS_W5_created_data}\hhids.dta", replace
 
 
 
+********************************************************************************
+*Food Prices
+********************************************************************************
+
+use "${tza_GHS_W5_raw_data }\cm_sec_g.dta", clear
+
+ren id_01 region
+ren id_02 district
+ren id_04 ea
+
+
+
+ tab cm_g_unit2 if item_code==104
+*br cm_g_weight cm_g_price cm_g_weight2 cm_g_price2 cm_g_unit2 item_code item_name if item_code==104
+
+gen maize_price = cm_g_price/cm_g_weight if item_code==104
+*br cm_g_weight cm_g_price maize_price item_code item_name if item_code==104
+
+sum maize_price,detail
+tab maize_price
+
+replace maize_price = 900 if maize_price >900 & maize_price<. //bottom 5%
+*replace maize_price = 50 if maize_price< 50
+tab maize_price,missing
+
+
+egen median_pr_ea_id = median(maize_price), by (ea)
+egen median_pr_district  = median(maize_price), by (district )
+egen median_pr_region  = median(maize_price), by (region )
+
+
+
+egen num_pr_ea_id = count(maize_price), by (ea)
+egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_region = count(maize_price), by (region )
+
+
+
+tab num_pr_ea_id
+tab num_pr_region
+tab num_pr_district
+
+
+
+
+gen maize_price_mr  = maize_price
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_district if maize_price_mr==.
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_region if maize_price_mr==. 
+tab maize_price_mr,missing
+
+
+
+
+
+************rice
+
+ tab cm_g_unit2 if item_code==102
+*br cm_g_weight cm_g_price cm_g_weight2 cm_g_price2 cm_g_unit2 item_code item_name if item_code==102
+
+gen rice_price = cm_g_price/cm_g_weight if item_code==102
+*br cm_g_weight cm_g_price rice_price item_code item_name if item_code==102
+
+
+sum rice_price,detail
+tab rice_price
+
+*replace rice_price = 1000 if rice_price >1000 & rice_price<.
+*replace rice_price = 25 if rice_price< 25
+*tab rice_price,missing
+
+
+egen medianr_pr_ea_id = median(rice_price), by (ea)
+
+egen medianr_pr_district  = median(rice_price), by (district )
+egen medianr_pr_region  = median(rice_price), by (region )
+
+
+
+egen numr_pr_ea_id = count(rice_price), by (ea)
+
+egen numr_pr_district  = count(rice_price), by (district )
+egen numr_pr_region = count(rice_price), by (region )
+
+tab numr_pr_ea_id
+tab numr_pr_region
+tab numr_pr_district
+
+
+
+
+gen rice_price_mr  = rice_price
+
+replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. 
+tab rice_price_mr,missing
+
+replace rice_price_mr = medianr_pr_district if rice_price_mr==.
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_region if rice_price_mr==. 
+tab rice_price_mr,missing
+
+sort region district ea
+collapse  (max) maize_price_mr rice_price_mr, by(region district ea)
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
+save "${tza_GHS_W3_created_data}\food_pr.dta", replace
+
+
+
+
+
+
+
+
+use "${tza_GHS_W3_raw_data }/HH_SEC_A.dta", clear 
+ren hh_a01_1 region 
+ren hh_a01_2 region_name
+ren hh_a02_1 district
+ren hh_a02_2 district_name
+ren hh_a03_1 ward 
+ren hh_a03_2 ward_name
+ren hh_a04_1 ea
+ren hh_a09 y2_hhid
+ren hh_a10 hh_split
+ren y3_weight weight
+gen rural = (y3_rural==1) 
+keep y3_hhid region district ward ea rural weight strataid clusterid y2_hhid hh_split
+lab var rural "1=Household lives in a rural area"
+merge m:1 region district ea using "${tza_GHS_W3_created_data}\food_pr.dta"
+
+
+****MAIZE
+
+egen median_pr_ea_id = median(maize_price), by (ea)
+egen median_pr_district  = median(maize_price), by (district )
+egen median_pr_region  = median(maize_price), by (region )
+
+
+
+egen num_pr_ea_id = count(maize_price), by (ea)
+egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_region = count(maize_price), by (region )
+
+tab num_pr_ea_id
+tab num_pr_region
+tab num_pr_district
+
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_district if maize_price_mr==.
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_region if maize_price_mr==. 
+tab maize_price_mr,missing
+
+
+
+*****RICE
+
+
+egen medianr_pr_ea_id = median(rice_price), by (ea)
+egen medianr_pr_district  = median(rice_price), by (district )
+egen medianr_pr_region  = median(rice_price), by (region )
+
+
+
+egen numr_pr_ea_id = count(rice_price), by (ea)
+egen numr_pr_district  = count(rice_price), by (district )
+egen numr_pr_region = count(rice_price), by (region )
+
+tab numr_pr_ea_id
+tab numr_pr_region
+tab numr_pr_district
+
+
+
+replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_district if rice_price_mr==.
+tab rice_price_mr,missing
+replace rice_price_mr = medianr_pr_region if rice_price_mr==. 
+tab rice_price_mr,missing
+
+
+ren y3_hhid HHID
+collapse  (max) maize_price_mr rice_price_mr, by(HHID)
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
+save "${tza_GHS_W3_created_data}\food_prices_2012.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 *********************************************** 
@@ -807,12 +1033,28 @@ save "${tza_GHS_W5_created_data}\land_holding_2020.dta", replace
 
 
 
-
 *******************************
 *Soil Quality
 *******************************
+use "${tza_GHS_W5_raw_data}\ag_sec_02.dta",clear
+gen area_acres_est = ag2a_04
+*replace area_acres_est = ag2b_15 if area_acres_est==.
+gen area_acres_meas = ag2a_09
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*keep if area_acres_est !=.
+*keep y2_hhid plot_id area_acres_est area_acres_meas
+lab var area_acres_meas "Plot are in acres (GPSd)"
+lab var area_acres_est "Plot area in acres (estimated)"
+gen area_est_hectares=area_acres_est* (1/2.47105)  
+gen area_meas_hectares= area_acres_meas* (1/2.47105)
 
-use "${tza_GHS_W5_raw_data}\ag_sec_3a.dta",clear 
+keep y5_hhid plot_id area_est_hectares area_meas_hectares
+ 
+ 
+ 
+merge 1:1 y5_hhid plot_id using "${tza_GHS_W5_raw_data}\ag_sec_3a.dta"
+
+
 ren y5_hhid HHID
 
 ren ag3a_11 soil_quality
@@ -823,6 +1065,12 @@ tab soil_quality, missing
 collapse (max) soil_quality, by (HHID)
 la var soil_quality "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W5_created_data}\soil_quality_2020.dta", replace
+
+
+
+
+
+
 
 
 

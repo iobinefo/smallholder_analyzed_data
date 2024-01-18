@@ -951,10 +951,27 @@ save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 *******************************
 *Soil Quality
 *******************************
+use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
+append using "${tza_GHS_W2_raw_data}\AG_SEC2B.dta", gen(short)
+gen area_acres_est = ag2a_04
+replace area_acres_est = ag2b_15 if area_acres_est==.
+gen area_acres_meas = ag2a_09
+replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*keep if area_acres_est !=.
+*keep y2_hhid plot_id area_acres_est area_acres_meas
 
-use "${tza_GHS_W2_raw_data}\AG_SEC3A.dta",clear 
+
+lab var area_acres_meas "Plot are in acres (GPSd)"
+lab var area_acres_est "Plot area in acres (estimated)"
+gen area_est_hectares=area_acres_est* (1/2.47105)  
+gen area_meas_hectares= area_acres_meas* (1/2.47105)
+
+keep y2_hhid plotnum area_est_hectares area_meas_hectares
+
+merge 1:1 y2_hhid plotnum using "${tza_GHS_W2_raw_data}\AG_SEC3A.dta"
+
+
 ren y2_hhid HHID
-
 ren ag3a_10 soil_quality
 tab soil_quality, missing
 egen med_soil = median(soil_quality)
@@ -963,6 +980,9 @@ tab soil_quality, missing
 collapse (max) soil_quality, by (HHID)
 la var soil_quality "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
+
+
+
 
 
 
