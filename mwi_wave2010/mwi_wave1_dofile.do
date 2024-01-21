@@ -144,7 +144,11 @@ tab maize_price_mr,missing
 collapse (max) maize_price_mr, by (region district ea_id)
 
 label var maize_price_mr  "commercial price of maize in naira"
+sort ea_id
+drop if district==.
 sort region district ea_id
+
+
 save "${mwi_GHS_W1_created_data}\maize_pr.dta", replace
 
 
@@ -170,7 +174,11 @@ keep HHID case_id ea_id district region
 sort region district ea_id
 merge m:1 ea_id using "${mwi_GHS_W1_created_data}\maize_pr.dta"
 
+tab maize_price_mr, missing
 
+collapse (max) maize_price_mr, by (HHID)
+la var maize_price_mr "price of maize crop"
+save "${mwi_GHS_W1_created_data}\food_prices_2010.dta", replace
 
 
 
@@ -707,11 +715,6 @@ la var safety_net "=1 if received cash transfer, cash for work, food for work or
 save "${mwi_GHS_W1_created_data}\safety_net_2010.dta", replace
 
 
-**************************************
-*Food Prices
-**************************************
-
-
 
 
 
@@ -750,7 +753,7 @@ collapse  (max) net_seller net_buyer, by(HHID)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
 sort HHID
-save "${mwi_GHS_W1_created_data}\food_prices_2010.dta", replace
+save "${mwi_GHS_W1_created_data}\net_buyers_sellers_2010.dta", replace
 
 
 
@@ -901,7 +904,7 @@ save "${mwi_GHS_W1_created_data}\land_holding_2010.dta", replace
  ********************************************************************************
 * Soil Quality *
 ********************************************************************************
-/*use "${mwi_GHS_W1_raw_data}\ag_mod_p_10.dta",clear 
+use "${mwi_GHS_W1_raw_data}\ag_mod_p_10.dta",clear 
 
 gen season=2 //perm
 ren ag_p0b plot_id
@@ -954,7 +957,7 @@ replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acr
 
 ren HHID HHID
 keep HHID plot_id field_size case_id ea_id
-collapse (max) field_size, by (HHID)
+*collapse (max) field_size, by (HHID)
 save "${mwi_GHS_W1_created_data}\field_size.dta", replace
 
 
@@ -963,12 +966,17 @@ use "${mwi_GHS_W1_raw_data}\ag_mod_d_10.dta" , clear
 ren ag_d00 plot_id
 ren HHID HHID
 
-merge m:1 HHID using "${mwi_GHS_W1_created_data}\field_size.dta"
+merge m:1 HHID plot_id using "${mwi_GHS_W1_created_data}\field_size.dta"
 
 ren ag_d22 soil_quality
 
 order HHID plot_id field_size soil_quality
 
+
+
+
+
+/*
 egen med_soil = median(soil_quality)
 replace soil_quality= med_soil if soil_quality==.
 tab soil_quality, missing
@@ -1016,6 +1024,9 @@ merge 1:1 HHID using "${mwi_GHS_W1_created_data}\safety_net_2010.dta", gen (safe
 sort HHID
 
 merge 1:1 HHID using "${mwi_GHS_W1_created_data}\food_prices_2010.dta", gen (foodprice)
+sort HHID
+
+merge 1:1 HHID using "${mwi_GHS_W1_created_data}\net_buyers_sellers_2010.dta", gen (net)
 sort HHID
 
 merge 1:1 HHID using "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", gen (soil)

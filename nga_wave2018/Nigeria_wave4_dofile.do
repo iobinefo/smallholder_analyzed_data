@@ -968,11 +968,14 @@ sort hhid
 
 
 *how to get them my max fieldsize
-/*egen max_fieldsize = max(field_size), by (hhid)
+
+
+/*
+egen max_fieldsize = max(field_size), by (hhid)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
 order field_size soil_quality hhid max_fieldsize
 sort hhid
-br */
+br 
 
 egen med_soil = median(soil_quality)
 
@@ -1003,7 +1006,7 @@ save "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", replace
 
 
 
-
+*/
 
 
 
@@ -1055,8 +1058,8 @@ merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\safety_net_2018.dta", gen (
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\food_prices_2018.dta", gen (foodprices)
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", gen (soil)
-sort hhid
+*merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", gen (soil)
+*sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", gen (geodata)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\household_asset_2018.dta", gen (asset)

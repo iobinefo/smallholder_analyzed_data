@@ -1135,6 +1135,8 @@ keep zone state lga sector ea hhid plotid field_size
 merge 1:1 hhid plotid using "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3.dta"
 
 
+
+
 ren s11b1q45 soil_quality
 tab soil_quality, missing
 order field_size soil_quality hhid 
@@ -1142,11 +1144,14 @@ sort hhid
 
 
 *how to get them my max fieldsize
-/*egen max_fieldsize = max(field_size), by (hhid)
+
+
+/*
+egen max_fieldsize = max(field_size), by (hhid)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
 order field_size soil_quality hhid max_fieldsize
 sort hhid
-br */
+br 
 
 egen med_soil = median(soil_quality)
 
@@ -1179,7 +1184,7 @@ save "${Nigeria_GHS_W3_created_data}\soil_quality_2015.dta", replace
 
 
 
-
+*/
 
 
 

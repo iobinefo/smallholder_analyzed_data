@@ -593,8 +593,8 @@ tab maize_price,missing
 sum maize_price,detail
 tab maize_price
 
-replace maize_price = 170 if maize_price >170 & maize_price<.  //bottom 5%
-replace maize_price = 10 if maize_price< 10        ////top 5%
+replace maize_price = 270 if maize_price >270 & maize_price<.  //bottom 1%
+replace maize_price = 1 if maize_price< 1       ////top 1%
 
 
 
@@ -701,7 +701,7 @@ merge m:1 zone state lga sector ea using "${Nigeria_GHS_W1_created_data}\food_pr
 **************
 *maize price
 *************
-
+//missing values persists even after i did this
 replace maize_price_mr = median_pr_ea if maize_price_mr==.
 tab maize_price_mr, missing
 
@@ -715,6 +715,7 @@ replace maize_price_mr = median_pr_zone if maize_price_mr==.
 tab maize_price_mr, missing
 
 
+tab rice_price_mr, missing
 
 
 
@@ -760,22 +761,66 @@ use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect5_plantingw1.
 
 sort hhid item_cd
 
-collapse (sum) s5q1, by (hhid item_cd)
+collapse (sum) s5q1, by (zone state lga ea hhid item_cd)
 tab item_cd
 save "${Nigeria_GHS_W1_created_data}\assest_qty.dta", replace
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect5b_plantingw1.dta", clear
 
-collapse (mean) s5q4, by (hhid item_cd)
+collapse (mean) s5q4, by (zone state lga ea hhid item_cd)
 tab item_cd
 save "${Nigeria_GHS_W1_created_data}\assest_cost.dta", replace
 
 *******************Merging assest***********************
 sort hhid item_cd
-merge 1:1 hhid item_cd using "${Nigeria_GHS_W1_created_data}\assest_qty.dta"
+merge 1:1 hhid item_cd using "${Nigeria_GHS_W1_created_data}\assest_qty.dta", keepusing(zone state lga ea s5q1)
 
 drop _merge
 gen hhasset_value = s5q4*s5q1
+
+
+tab hhasset_value
+
+replace hhasset_value=. if hhasset_value==0
+replace hhasset_value= 5700000 if hhasset_value> 5700000 & hhasset_value<.
+tab hhasset_value, missing
+
+sum hhasset_value, detail
+
+egen median_hhasset_ea = median(hhasset), by (ea)
+egen median_hhasset_lga = median(hhasset), by (lga)
+egen median_hhasset_state = median(hhasset), by (state)
+egen median_hhasset_zone = median(hhasset), by (zone)
+
+egen num_hhasset_ea = count(hhasset), by (ea)
+egen num_hhasset_lga = count(hhasset), by (lga)
+egen num_hhasset_state = count(hhasset), by (state)
+egen num_hhasset_zone = count(hhasset), by (zone)
+
+tab num_hhasset_ea
+tab num_hhasset_lga
+tab num_hhasset_state
+tab num_hhasset_zone
+
+
+replace hhasset_value = median_hhasset_ea if hhasset_value==. & num_hhasset_ea>= 239
+tab hhasset_value, missing
+
+replace hhasset_value = median_hhasset_lga if hhasset_value==. & num_hhasset_lga>= 239
+tab hhasset_value, missing
+
+replace hhasset_value = median_hhasset_state if hhasset_value==. & num_hhasset_state>= 239
+tab hhasset_value, missing
+
+replace hhasset_value = median_hhasset_zone if hhasset_value==. & num_hhasset_zone>= 239
+tab hhasset_value, missing
+
+
+
+
+
+
+
 collapse (sum) hhasset_value, by (hhid)
 la var hhasset_value "total value of household asset"
 save "${Nigeria_GHS_W1_created_data}\assest_value.dta", replace

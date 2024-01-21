@@ -1004,7 +1004,7 @@ ren s11b1q45 soil_quality
 tab soil_quality, missing
 
 
-
+/*
 *how to get them my max fieldsize
 egen max_fieldsize = max(field_size), by (hhid)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
@@ -1042,7 +1042,7 @@ collapse (max) soil_quality, by (hhid)
 la var soil_quality "1=Good 2= fair 3=Bad "
 save "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", replace
 
-
+*/
 
 ************************* Merging Agricultural Datasets ********************
 
