@@ -879,7 +879,39 @@ save "${tza_GHS_W4_created_data}\land_holding_2014.dta", replace
 *Soil Quality
 *******************************
 
-use "${tza_GHS_W4_raw_data}\ag_sec_3a.dta",clear 
+use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
+append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+ren plotnum plot_id
+gen area_acres_est = ag2a_04
+replace area_acres_est = ag2b_15 if area_acres_est==.
+gen area_acres_meas = ag2a_09
+replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*keep if area_acres_est !=.
+*keep y2_hhid plot_id area_acres_est area_acres_meas
+lab var area_acres_meas "Plot are in acres (GPSd)"
+lab var area_acres_est "Plot area in acres (estimated)"
+gen area_est_hectares=area_acres_est* (1/2.47105)  
+gen area_meas_hectares= area_acres_meas* (1/2.47105)
+
+keep y4_hhid plot_id plotname area_est_hectares area_meas_hectares
+
+ren plot_id plotnum
+
+egen any = rowmiss(plotnum)
+
+drop if any
+ 
+ 
+ 
+merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data}\ag_sec_3a.dta"
+
+
+
+
+
+
+
+*use "${tza_GHS_W4_raw_data}\ag_sec_3a.dta",clear 
 ren y4_hhid HHID
 
 ren ag3a_11 soil_quality
