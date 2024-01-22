@@ -1101,18 +1101,18 @@ replace plot_id=ag_j00 if plot_id=="" //971 real changes
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
 replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
-replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
+*replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
+*replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
+*replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
+*replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
 
-append using `ag_perm'
-lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-label values season season
+*append using `ag_perm'
+*lab var season "season: 0=rainy, 1=dry, 2=tree crop"
+*label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
+*label values season season
 
 gen field_size= (area_acres_est* (1/2.47105))
 replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
@@ -1136,15 +1136,12 @@ save "${mwi_GHS_W2_created_data}\land_holding_2013.dta", replace
 
 
 
-/*
+
 
 
 *******************************
 *Soil Quality
 *******************************
-
-
-
 
 use "${mwi_GHS_W2_raw_data}\ag_mod_p_13.dta",clear 
 
@@ -1170,34 +1167,39 @@ save `ag_perm'
 
 use "${mwi_GHS_W2_raw_data}\ag_mod_c_13.dta",clear 
 gen season=0 //rainy
-append using "${mwi_GHS_W2_raw_data}\ag_mod_j_13.dta", gen(dry)
-replace season=1 if season==. //dry
-ren ag_c00 plot_id
-replace plot_id=ag_j00 if plot_id=="" //971 real changes
+*append using "${mwi_GHS_W2_raw_data}\ag_mod_j_13.dta", gen(dry)
+*replace season=1 if season==. //dry
+*ren ag_c00 plot_id
+*replace plot_id=ag_j00 if plot_id=="" //971 real changes
 
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
 replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
-replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
+*replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
+*replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
+*replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
+*replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
 
-append using `ag_perm'
-lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-label values season season
+*append using `ag_perm'
+*lab var season "season: 0=rainy, 1=dry, 2=tree crop"
+*label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
+*label values season season
 
-gen field_size= (area_acres_est* (1/2.47105))
-replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+gen field_size= (area_acres_meas* (1/2.47105))
+replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
+ren ag_c00 plot_id
 
 ren y2_hhid HHID
-keep HHID plot_id field_size 
+keep HHID plot_id field_size occ
 *collapse (sum) field_size, by (HHID)
+
+egen any = rowmiss(plot_id)
+
+drop if any==1
 sort HHID
 save "${mwi_GHS_W2_created_data}\field_size.dta", replace
 
@@ -1209,51 +1211,73 @@ use "${mwi_GHS_W2_raw_data}\ag_mod_d_13.dta" , clear
 ren ag_d00 plot_id
 ren y2_hhid HHID
 
-merge m:1 HHID plot_id using "${mwi_GHS_W2_created_data}\field_size.dta"
+
+egen any = rowmiss(plot_id)
+
+drop if any==1
+
+
+
+merge m:1 HHID occ using "${mwi_GHS_W2_created_data}\field_size.dta"
 
 ren ag_d22 soil_quality
 
-order HHID plot_id field_size soil_quality
+
+*how to get them my max fieldsize
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID occ field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size soil_quality dup
 
 
+list HHID occ  field_size soil_quality dup if dup>0
+
+egen soil_qty_rev = min(soil_quality) 
+gen soil_qty_rev2 = soil_quality
+
+replace soil_qty_rev2 = soil_qty_rev if dup>0
+
+list HHID occ  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
 
 
+collapse (mean) soil_qty_rev2 , by (HHID)
+la define soil 1 "Good" 2 "fair" 3 "poor"
 
+la value soil soil_qty_rev2
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-use "${mwi_GHS_W2_raw_data}\ag_mod_d_13.dta" , clear
-ren y2_hhid HHID
-
-ren ag_d22 soil_quality
-tab soil_quality, missing
-egen med_soil = median(soil_quality)
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
-collapse (max) soil_quality, by (HHID)
-la var soil_quality "1=Good 2= fair 3=poor "
 save "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", replace
 
 
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

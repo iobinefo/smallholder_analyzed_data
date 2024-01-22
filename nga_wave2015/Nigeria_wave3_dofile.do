@@ -70,8 +70,14 @@ save "${Nigeria_GHS_W3_created_data}\geodata_2015.dta", replace
 
 
 
+**************************
+*Food Prices from Community
+**************************
+use "${Nigeria_GHS_W3_raw_data}\sectc2a_plantingw3.dta", clear
 
-
+br if item_cd == 20
+br if item_cd ==20 & c2q2==1
+tab c2q2 if item_cd==20
 
 
 

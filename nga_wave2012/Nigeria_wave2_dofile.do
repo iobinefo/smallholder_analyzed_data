@@ -1004,7 +1004,7 @@ ren s11b1q45 soil_quality
 tab soil_quality, missing
 
 
-/*
+
 *how to get them my max fieldsize
 egen max_fieldsize = max(field_size), by (hhid)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
