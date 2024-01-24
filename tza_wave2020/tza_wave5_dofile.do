@@ -47,6 +47,7 @@ save "${tza_GHS_W5_created_data}\hhids.dta", replace
 ********************************************************************************
 
 use "${tza_GHS_W5_raw_data }\cm_sec_g.dta", clear
+merge m:1 interview__key  using "${tza_GHS_W5_raw_data}\cm_sec_a.dta", gen (com)
 
 ren id_01 region
 ren id_02 district
@@ -54,18 +55,17 @@ ren id_04 ea
 
 
 
- tab cm_g_unit2 if item_code==104
-*br cm_g_weight cm_g_price cm_g_weight2 cm_g_price2 cm_g_unit2 item_code item_name if item_code==104
+tab vil_loc_weight if item_id==2
+tab vil_loc_price if item_id==2
+*br vil_loc_unit_os vil_loc_weight vil_loc_price  item_id if item_id==2
 
-gen maize_price = cm_g_price/cm_g_weight if item_code==104
-*br cm_g_weight cm_g_price maize_price item_code item_name if item_code==104
-
+gen maize_price = vil_loc_price  if item_id==2
 sum maize_price,detail
 tab maize_price
 
-replace maize_price = 900 if maize_price >900 & maize_price<. //bottom 5%
+*replace maize_price = 900 if maize_price >900 & maize_price<. //bottom 5%
 *replace maize_price = 50 if maize_price< 50
-tab maize_price,missing
+*tab maize_price,missing
 
 
 egen median_pr_ea_id = median(maize_price), by (ea)
@@ -1053,17 +1053,71 @@ keep y5_hhid plot_id area_est_hectares area_meas_hectares
  
  
 merge 1:1 y5_hhid plot_id using "${tza_GHS_W5_raw_data}\ag_sec_3a.dta"
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
 
 
 ren y5_hhid HHID
-
+ren plot_id plotnum
 ren ag3a_11 soil_quality
 tab soil_quality, missing
-egen med_soil = median(soil_quality)
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
-collapse (max) soil_quality, by (HHID)
-la var soil_quality "1=Good 2= Average 3=Bad "
+
+
+gen field_size= area_meas_hectares
+tab field_size, missing
+
+
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID plotnum field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size soil_quality dup
+
+
+list HHID plotnum  field_size soil_quality dup if dup>0
+
+egen soil_qty_rev = min(soil_quality) 
+gen soil_qty_rev2 = soil_quality
+
+replace soil_qty_rev2 = soil_qty_rev if dup>0
+
+list HHID plotnum  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+tab soil_qty_rev2, missing
+
+
+
+
+egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
+egen median_ward  = median(soil_qty_rev2), by (region district ward )
+egen median_district  = median(soil_qty_rev2), by (region district )
+egen median_region  = median(soil_qty_rev2), by (region )
+
+replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
+replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_region if soil_qty_rev2==.
+tab soil_qty_rev2,missing
+
+
+
+replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
+replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
+tab soil_qty_rev2,missing
+
+
+collapse (mean) soil_qty_rev2 , by (HHID)
+la define soil 1 "Good" 2 "fair" 3 "poor"
+la value soil soil_qty_rev2
+la var soil_qty_rev2 "1=Good 2= Average 3=Bad "
+
 save "${tza_GHS_W5_created_data}\soil_quality_2020.dta", replace
 
 
@@ -1104,6 +1158,8 @@ sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\safety_net_2020.dta", gen (safety)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\food_prices_2020.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\soil_quality_2020.dta", gen (soil)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", gen (hhasset)
 sort HHID

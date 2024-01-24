@@ -1004,13 +1004,34 @@ replace soil_qty_rev2 = soil_qty_rev if dup>0
 list HHID plotnum  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
 tab soil_qty_rev2, missing
 
+
+
+
+egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
+egen median_ward  = median(soil_qty_rev2), by (region district ward )
+egen median_district  = median(soil_qty_rev2), by (region district )
+egen median_region  = median(soil_qty_rev2), by (region )
+
+replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
+replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_region if soil_qty_rev2==.
+tab soil_qty_rev2,missing
+
+
+
+replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
+replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
+tab soil_qty_rev2,missing
+
+
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 la value soil soil_qty_rev2
 la var soil_qty_rev2 "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
-
-
 
 
 
