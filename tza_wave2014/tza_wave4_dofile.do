@@ -18,11 +18,239 @@ global tza_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms
 
 
 
-*****food prices
-use "${tza_GHS_W4_raw_data }\com_sec_cg.dta",clear
+****************
+*food prices
+***************
 
-tab cm_g_unit if item_code==104
-br cm_g_unit cm_g_weight cm_g_price item_name if item_code==104
+
+
+use "${tza_GHS_W4_raw_data }\com_sec_cg.dta",clear
+merge m:1 y4_cluster  using "${tza_GHS_W4_raw_data}\com_sec_a1a2.dta", gen (com)
+
+
+
+ren id_01 region
+ren id_02 district
+ren id_05 ea
+
+
+
+tab vil_loc_weight if item_id==2
+tab vil_loc_price if item_id==2
+*br vil_loc_unit_os vil_loc_weight vil_loc_price  item_id if item_id==2
+
+gen maize_price = vil_loc_price  if item_id==2
+sum maize_price,detail
+tab maize_price
+
+*replace maize_price = 900 if maize_price >900 & maize_price<. //bottom 5%
+*replace maize_price = 50 if maize_price< 50
+*tab maize_price,missing
+
+
+egen median_pr_ea_id = median(maize_price), by (ea)
+egen median_pr_ea  = median(maize_price), by (id_03 )
+egen median_pr_ea_  = median(maize_price), by (id_05 )
+
+egen median_pr_district  = median(maize_price), by (district )
+egen median_pr_region  = median(maize_price), by (region )
+
+
+
+egen num_pr_ea_id = count(maize_price), by (ea)
+egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_region = count(maize_price), by (region )
+
+
+
+tab num_pr_ea_id
+tab num_pr_region
+tab num_pr_district
+
+
+
+
+gen maize_price_mr  = maize_price
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_ea if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_ea_ if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_district if maize_price_mr==.
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_region if maize_price_mr==. 
+tab maize_price_mr,missing
+
+egen mid_maize= median(maize_price)
+replace maize_price_mr = mid_maize if maize_price_mr==.
+tab maize_price_mr,missing
+
+
+
+
+************rice
+tab vil_loc_weight if item_id==1
+tab vil_loc_price if item_id==1
+*br vil_loc_unit_os vil_loc_weight vil_loc_price  item_id if item_id==2
+
+gen rice_price = vil_loc_price  if item_id==1
+
+sum rice_price,detail
+tab rice_price
+
+*replace rice_price = 1000 if rice_price >1000 & rice_price<.
+*replace rice_price = 25 if rice_price< 25
+*tab rice_price,missing
+
+
+egen median_ea_id = median(rice_price), by (ea)
+egen median_ea  = median(rice_price), by (id_03 )
+egen median_ea_  = median(rice_price), by (id_05 )
+
+egen median_district  = median(rice_price), by (district )
+egen median_region  = median(rice_price), by (region )
+
+
+
+
+
+gen rice_price_mr  = rice_price
+
+replace rice_price_mr = median_pr_ea_id if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_ea if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_ea_ if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_district if rice_price_mr==.
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_region if rice_price_mr==. 
+tab rice_price_mr,missing
+
+egen mid_rice= median(rice_price)
+replace rice_price_mr = mid_rice if rice_price_mr==.
+tab rice_price_mr,missing
+
+
+
+
+sort region district ea
+collapse  (max) maize_price_mr rice_price_mr id_03 id_05, by(region district ea)
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
+save "${tza_GHS_W5_created_data}\food_pr.dta", replace
+
+
+
+
+
+
+
+use "${tza_GHS_W4_raw_data }/hh_sec_a.dta", clear 
+ren hh_a01_1 region 
+ren hh_a01_2 region_name
+ren hh_a02_1 district
+ren hh_a02_2 district_name
+ren hh_a03_1 ward 
+ren hh_a03_2 ward_name
+ren hh_a03_3a village 
+ren hh_a03_3b village_name
+ren hh_a04_1 ea
+ren y4_weights weight
+gen rural = (clustertype==1)
+keep y4_hhid region district ward village region_name district_name ward_name village_name ea rural weight strataid clusterid
+lab var rural "1=Household lives in a rural area"
+
+merge m:1 region district ea using "${tza_GHS_W5_created_data}\food_pr.dta"
+
+
+****MAIZE
+
+egen median_pr_ea_id = median(maize_price), by (ea)
+egen median_pr_ea  = median(maize_price), by (id_03 )
+egen median_pr_ea_  = median(maize_price), by (id_05 )
+
+egen median_pr_district  = median(maize_price), by (district )
+egen median_pr_region  = median(maize_price), by (region )
+
+
+
+egen num_pr_ea_id = count(maize_price), by (ea)
+egen num_pr_district  = count(maize_price), by (district )
+egen num_pr_region = count(maize_price), by (region )
+
+
+
+tab num_pr_ea_id
+tab num_pr_region
+tab num_pr_district
+
+
+
+replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_ea if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_ea_ if maize_price_mr==. 
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_district if maize_price_mr==.
+tab maize_price_mr,missing
+replace maize_price_mr = median_pr_region if maize_price_mr==. 
+tab maize_price_mr,missing
+
+
+
+
+
+*****RICE
+
+
+egen median_ea_id = median(rice_price), by (ea)
+egen median_ea  = median(rice_price), by (id_03 )
+egen median_ea_  = median(rice_price), by (id_05 )
+
+egen median_district  = median(rice_price), by (district )
+egen median_region  = median(rice_price), by (region )
+
+
+
+
+replace rice_price_mr = median_pr_ea_id if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_ea if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_ea_ if rice_price_mr==. 
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_district if rice_price_mr==.
+tab rice_price_mr,missing
+replace rice_price_mr = median_pr_region if rice_price_mr==. 
+tab rice_price_mr,missing
+
+
+
+ren y5_hhid HHID
+collapse  (max) maize_price_mr rice_price_mr, by(HHID)
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
+save "${tza_GHS_W5_created_data}\food_prices_2020.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
