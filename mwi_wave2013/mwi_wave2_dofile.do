@@ -74,13 +74,13 @@ sort region crop_code unit_code
 save "${mwi_GHS_W2_created_data}\coversionfactor_for_maize_consumption.dta", replace
 
 
-/*
+
 
 **********************
 *HH_id
 **********************
 
-
+//dropped duplicate observation....................
 
 use "${mwi_GHS_W2_raw_data}\hh_mod_a_filt_13.dta",clear 
 rename hh_a10a ta
@@ -91,6 +91,8 @@ gen rural = (reside==2)
 lab var rural "1=Household lives in a rural area"
 collapse (max) hh_a40c, by ( region district ea_id ) 
 sort ea_id 
+duplicates report ea_id
+duplicates drop ea_id, force
 save "${mwi_GHS_W2_created_data}\hhid.dta", replace
 
 
@@ -114,7 +116,7 @@ ren com_ck00b3 unit_code
 
 sort region crop_code unit_code
 drop _merge
-merge m:1 region crop_code unit_code using "${mwi_GHS_W1_created_data}\coversionfactor_for_maize_consumption.dta", keepusing(conversion)
+merge m:1 region crop_code unit_code using "${mwi_GHS_W2_created_data}\coversionfactor_for_maize_consumption.dta", keepusing(conversion)
 
 ******************
 *Maize
@@ -160,42 +162,43 @@ tab maize_price_mr,missing
 replace maize_price_mr = median_pr_region if maize_price_mr==.
 tab maize_price_mr,missing
 
-*egen mid_price = median(maize_price)
-*replace maize_price_mr = mid_price if maize_price_mr==.
-*tab maize_price_mr,missing
 collapse (max) maize_price_mr, by (region district ea_id)
 
 label var maize_price_mr  "commercial price of maize in naira"
+//dropped districts missing (3) observation....................
+
+drop if district==.
 sort region district ea_id
-save "${mwi_GHS_W1_created_data}\maize_pr.dta", replace
+
+save "${mwi_GHS_W2_created_data}\maize_pr.dta", replace
 
 
 
 **********************
 *HH
 **********************
-use "${mwi_GHS_W1_raw_data}\hh_mod_a_filt_10.dta",clear 
+use "${mwi_GHS_W2_raw_data}\hh_mod_a_filt_13.dta",clear 
 
-rename hh_a01 district
-rename hh_a02 ta 
+rename hh_a10a ta
 rename hh_wgt weight
-gen rural = (reside==2)
-*ren reside stratum
-gen region = . 
-replace region=1 if inrange(district, 101, 107)
-replace region=2 if inrange(district, 201, 210)
-replace region=3 if inrange(district, 301, 315)
+rename region region
 lab var region "1=North, 2=Central, 3=South"
+gen rural = (reside==2)
 lab var rural "1=Household lives in a rural area"
-
+drop HHID
+ren y2_hhid HHID
 keep HHID case_id ea_id district region
 sort region district ea_id
-merge m:1 ea_id using "${mwi_GHS_W1_created_data}\maize_pr.dta"
+merge m:1 ea_id using "${mwi_GHS_W2_created_data}\maize_pr.dta"
+collapse (max) maize_price_mr, by (HHID)
+
+label var maize_price_mr  "commercial price of maize in naira"
+save "${mwi_GHS_W2_created_data}\food_prices_2013.dta", replace
 
 
 
 
-*/
+
 
 
 
@@ -792,176 +795,14 @@ la var safety_net "=1 if received cash transfer, cash for work, food for work or
 save "${mwi_GHS_W2_created_data}\safety_net_2013.dta", replace
 
 
-**************************************
-*Food Prices
-**************************************
-use "${mwi_GHS_W2_raw_data}\hh_mod_g1_13.dta",clear 
-merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta"
-ren y2_hhid HHID
-*hh_g04a   qty purchased by household (7days)
-*hh_g04b hh_g04b_os     units purchased by household (7days)
-*hh_g05    cost of purchase by household (7days)
-
-
-
-
-*********Getting the price for maize only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//1. Kilogram       1
-//18.gram        	0.001
-//15.litre     		1
-//2. 50kg     	    50
-//3. 90kg     	    90
-//4,5congo(pail)    1.5
-//17.derica(tin)    0.75
-//19.millitre       0.001
-//9. pieces	        0.35
-
-gen conversion =1
-replace conversion=1 if hh_g04b=="1" | hh_g04b =="15"
-gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*50 if hh_g04b=="2" 
-replace conversion = food_size*90 if hh_g04b=="3" 
-replace conversion = food_size*0.001 if hh_g04b=="18" |hh_g04b=="19" 
-replace conversion = food_size*1.5 if hh_g04b=="4" |	hh_g04b=="5"
-replace conversion = food_size*0.75 if hh_g04b=="17"
-replace conversion = food_size*0.35 if hh_g04b=="9"			
-tab conversion, missing
-
-*label list HH_G02
-
-gen food_price_maize = hh_g04a* conversion if hh_g02==104
-
-gen maize_price = hh_g05/food_price_maize if hh_g02==104
-
-*br hh_g04b conversion hh_g04a hh_g05 food_price_maize maize_price hh_g02 if hh_g02<=500
-
-sum maize_price,detail
-tab maize_price
-
-*replace maize_price = 600 if maize_price >600 & maize_price<.
-*replace maize_price = 50 if maize_price< 50
-tab maize_price,missing
-
-
-egen median_pr_ea_id = median(maize_price), by (ea_id)
-egen median_pr_district  = median(maize_price), by (district )
-egen median_pr_stratum  = median(maize_price), by (stratum )
-egen median_pr_region  = median(maize_price), by (region )
-
-
-egen num_pr_ea_id = count(maize_price), by (ea_id)
-egen num_pr_district  = count(maize_price), by (district )
-egen num_pr_stratum = count(maize_price), by (stratum )
-egen num_pr_region = count(maize_price), by (region )
-
-
-
-
-
-tab num_pr_ea_id
-tab num_pr_district
-tab num_pr_stratum
-tab num_pr_region
-
-
-gen maize_price_mr  = maize_price
-
-replace maize_price_mr = median_pr_ea_id if maize_price_mr==. & num_pr_ea_id >= 3
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_district if maize_price_mr==. & num_pr_district>=3
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_stratum if maize_price_mr==.  & num_pr_stratum>=3
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_region if maize_price_mr==. & num_pr_region>=3
-tab maize_price_mr,missing
-
-egen mid_price = median(maize_price)
-
-
-replace maize_price_mr = mid_price if maize_price_mr==.
-tab maize_price_mr,missing
-
-
-*********Getting the price for rice only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//1. Kilogram       1
-//18.gram        	0.001
-//15.litre     		1
-//2. 50kg     	    50
-//3. 90kg     	    90
-//4,5congo(pail)    1.5
-//17.derica(tin)    0.75
-//19.millitre       0.001
-//9. pieces	        0.35
-
-
-
-
-gen food_price_rice = hh_g04a* conversion if hh_g02==106
-
-gen rice_price  = hh_g05/food_price_rice if hh_g02==106
-
-*br hh_g04b conversion hh_g04a hh_g05 food_price_rice rice_price hh_g02 if hh_g02<=500
-
-sum rice_price,detail
-tab rice_price
-
-replace rice_price = 900 if rice_price >900 & rice_price<.
-*replace rice_price = 30 if rice_price< 30
-tab rice_price,missing
-
-
-egen medianr_pr_ea_id = median(rice_price), by (ea_id)
-egen medianr_pr_district  = median(rice_price), by (district )
-egen medianr_pr_stratum  = median(rice_price), by (stratum )
-egen medianr_pr_region  = median(rice_price), by (region )
-
-
-egen numr_pr_ea_id = count(rice_price), by (ea_id)
-egen numr_pr_district  = count(rice_price), by (district )
-egen numr_pr_stratum = count(rice_price), by (stratum )
-egen numr_pr_region = count(rice_price), by (region )
-
-
-
-
-
-tab numr_pr_ea_id
-tab numr_pr_district
-tab numr_pr_stratum
-tab numr_pr_region
-
-
-gen rice_price_mr  = rice_price
-
-replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. & numr_pr_ea_id >= 16
-tab rice_price_mr,missing
-
-replace rice_price_mr = medianr_pr_district if rice_price_mr==. & numr_pr_district>= 16
-tab rice_price_mr,missing
-
-replace rice_price_mr = medianr_pr_stratum if rice_price_mr==.  & numr_pr_stratum>= 16
-tab rice_price_mr,missing
-
-replace rice_price_mr = medianr_pr_region if rice_price_mr==. & numr_pr_region>= 16
-tab rice_price_mr,missing
-
-
 
 
 **************
 *Net Buyers and Sellers
 ***************
+use "${mwi_GHS_W2_raw_data}\hh_mod_g1_13.dta",clear 
+merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta"
+ren y2_hhid HHID
 *hh_g04a from purchases
 *hh_g06a from own production
 
@@ -987,13 +828,10 @@ tab net_buyer,missing
 
 
 
-collapse  (max) net_seller  net_buyer maize_price_mr  rice_price_mr, by(HHID)
+collapse  (max) net_seller  net_buyer, by(HHID)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr  "commercial price of maize in naira"
-label var rice_price_mr  "commercial price of rice in naira"
-sort HHID
-save "${mwi_GHS_W2_created_data}\food_prices_2013.dta", replace
+save "${mwi_GHS_W2_created_data}\net_buyer_seller_2013.dta", replace
 
 
 
@@ -1065,57 +903,66 @@ save "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta", replace
 * PLOT AREAS *
 ********************************************************************************
 clear
- 
- 
-
-use "${mwi_GHS_W2_raw_data}\ag_mod_p_13.dta",clear 
-
-gen season=2 //perm
-ren ag_p00 plot_id
-ren ag_p0c crop_code
-ren ag_p02a area
-ren ag_p02b unit
-
-drop if plot_id=="" //1,791 observations dropped
-keep if strpos(plot_id, "T") & plot_id!="" 
-collapse (max) area, by(y2_hhid plot_id crop_code season unit)
-collapse (sum) area, by(y2_hhid plot_id season unit)
-replace area=. if area==0 
-drop if area==. & unit==.
-gen area_acres_est = area if unit==1 											//Permanent crops in acres
-replace area_acres_est = (area*2.47105) if unit == 2 & area_acres_est ==.		//Permanent crops in hectares
-replace area_acres_est = (area*0.000247105) if unit == 3 & area_acres_est ==.	//Permanent crops in square meters
-keep y2_hhid plot_id season area_acres_est
-tempfile ag_perm
-save `ag_perm'
 
 
 use "${mwi_GHS_W2_raw_data}\ag_mod_c_13.dta",clear 
+merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta", gen (household)
 gen season=0 //rainy
-append using "${mwi_GHS_W2_raw_data}\ag_mod_j_13.dta", gen(dry)
-replace season=1 if season==. //dry
-ren ag_c00 plot_id
-replace plot_id=ag_j00 if plot_id=="" //971 real changes
 
+ren ag_c00 plot_id
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
 replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-*replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
-*replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-*replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-*replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
 
-*append using `ag_perm'
-*lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-*label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-*label values season season
 
-gen field_size= (area_acres_est* (1/2.47105))
-replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+gen field_size= (area_acres_meas* (1/2.47105))
+tab field_size, missing
+
+
+egen median_ea_id = median(field_size), by (ea_id)
+egen median_district  = median(field_size), by (district )
+egen median_stratum = median(field_size), by (stratum)
+egen median_region  = median(field_size), by (region )
+
+
+
+egen num_ea_id = count(field_size), by (ea_id)
+egen num_district  = count(field_size), by (district )
+egen num_stratum = count(field_size), by (stratum)
+egen num_region  = count(field_size), by (region )
+
+
+
+
+tab num_ea_id
+tab num_district
+tab num_stratum
+tab num_region
+
+
+
+replace field_size = median_ea_id if field_size ==.
+tab field_size,missing
+
+replace field_size = median_district if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_stratum if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_region if field_size ==.
+tab field_size,missing
+
+
+
+
+
+
+*replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
 
 ren y2_hhid HHID
 collapse (sum) field_size, by (HHID)
@@ -1143,55 +990,58 @@ save "${mwi_GHS_W2_created_data}\land_holding_2013.dta", replace
 *Soil Quality
 *******************************
 
-use "${mwi_GHS_W2_raw_data}\ag_mod_p_13.dta",clear 
-
-gen season=2 //perm
-ren ag_p00 plot_id
-ren ag_p0c crop_code
-ren ag_p02a area
-ren ag_p02b unit
-
-drop if plot_id=="" //1,791 observations dropped
-keep if strpos(plot_id, "T") & plot_id!="" 
-collapse (max) area, by(y2_hhid plot_id crop_code season unit)
-collapse (sum) area, by(y2_hhid plot_id season unit)
-replace area=. if area==0 
-drop if area==. & unit==.
-gen area_acres_est = area if unit==1 											//Permanent crops in acres
-replace area_acres_est = (area*2.47105) if unit == 2 & area_acres_est ==.		//Permanent crops in hectares
-replace area_acres_est = (area*0.000247105) if unit == 3 & area_acres_est ==.	//Permanent crops in square meters
-keep y2_hhid plot_id season area_acres_est
-tempfile ag_perm
-save `ag_perm'
-
-
 use "${mwi_GHS_W2_raw_data}\ag_mod_c_13.dta",clear 
+merge m:1 y2_hhid using  "${mwi_GHS_W2_created_data}\hhids.dta", gen (household)
 gen season=0 //rainy
-*append using "${mwi_GHS_W2_raw_data}\ag_mod_j_13.dta", gen(dry)
-*replace season=1 if season==. //dry
-*ren ag_c00 plot_id
-*replace plot_id=ag_j00 if plot_id=="" //971 real changes
 
+ren ag_c00 plot_id
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
 replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-*replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
-*replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-*replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-*replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
 
-*append using `ag_perm'
-*lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-*label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-*label values season season
 
 gen field_size= (area_acres_meas* (1/2.47105))
-replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
-ren ag_c00 plot_id
+tab field_size, missing
+
+
+egen median_ea_id = median(field_size), by (ea_id)
+egen median_district  = median(field_size), by (district )
+egen median_stratum = median(field_size), by (stratum)
+egen median_region  = median(field_size), by (region )
+
+
+
+egen num_ea_id = count(field_size), by (ea_id)
+egen num_district  = count(field_size), by (district )
+egen num_stratum = count(field_size), by (stratum)
+egen num_region  = count(field_size), by (region )
+
+
+
+
+tab num_ea_id
+tab num_district
+tab num_stratum
+tab num_region
+
+
+
+replace field_size = median_ea_id if field_size ==.
+tab field_size,missing
+
+replace field_size = median_district if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_stratum if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_region if field_size ==.
+tab field_size,missing
+*ren ag_c00 plot_id
 
 ren y2_hhid HHID
 keep HHID plot_id field_size occ
@@ -1308,8 +1158,11 @@ merge 1:1 HHID using "${mwi_GHS_W2_created_data}\food_prices_2013.dta", gen (foo
 sort HHID
 merge 1:1 HHID using "${mwi_GHS_W2_created_data}\geodata_2013.dta", gen (geodata)
 sort HHID
-*merge 1:1 HHID using "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", gen (soil)
-*sort HHID
+merge 1:1 HHID using "${mwi_GHS_W2_created_data}\net_buyer_seller_2013.dta", gen (net)
+sort HHID
+
+merge 1:1 HHID using "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", gen (soil)
+sort HHID
 merge 1:1 HHID using "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta",  gen (asset)
 sort HHID
 merge 1:1 HHID using "${mwi_GHS_W2_created_data}\land_holding_2013.dta"

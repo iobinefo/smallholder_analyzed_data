@@ -969,16 +969,45 @@ gen area_meas_hectares= area_acres_meas* (1/2.47105)
 keep y2_hhid plotnum area_est_hectares area_meas_hectares
 
 merge 1:1 y2_hhid plotnum using "${tza_GHS_W2_raw_data}\AG_SEC3A.dta"
+merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+
+
+gen field_size= area_meas_hectares
+tab field_size, missing
 
 
 ren y2_hhid HHID
 ren ag3a_10 soil_quality
-tab soil_quality, missing
-egen med_soil = median(soil_quality)
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
-collapse (max) soil_quality, by (HHID)
-la var soil_quality "1=Good 2= Average 3=Bad "
+
+
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID plotnum field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size soil_quality dup
+
+
+list HHID plotnum  field_size soil_quality dup if dup>0
+
+egen soil_qty_rev = min(soil_quality) 
+gen soil_qty_rev2 = soil_quality
+
+replace soil_qty_rev2 = soil_qty_rev if dup>0
+
+list HHID plotnum  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+tab soil_qty_rev2, missing
+
+collapse (mean) soil_qty_rev2 , by (HHID)
+la define soil 1 "Good" 2 "fair" 3 "poor"
+la value soil soil_qty_rev2
+la var soil_qty_rev2 "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
 
 

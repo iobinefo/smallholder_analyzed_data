@@ -1005,44 +1005,61 @@ tab soil_quality, missing
 
 
 
-*how to get them my max fieldsize
 egen max_fieldsize = max(field_size), by (hhid)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
 order field_size soil_quality hhid max_fieldsize
 sort hhid
 keep if field_size== max_fieldsize
+sort hhid plotid field_size
+
+duplicates report hhid
+
+duplicates tag hhid, generate(dup)
+tab dup
+list field_size soil_quality dup
+
+
+list hhid plotid field_size soil_quality dup if dup>0
+
+egen soil_qty_rev = min(soil_quality) 
+gen soil_qty_rev2 = soil_quality
+
+replace soil_qty_rev2 = soil_qty_rev if dup>0
+
+list hhid plotid  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
 
 
 
 
 
-egen med_soil = median(soil_quality)
+egen med_soil = median(soil_qty_rev2)
 
 
-egen med_soil_ea = median(soil_quality), by (ea)
-egen med_soil_lga = median(soil_quality), by (lga)
-egen med_soil_state = median(soil_quality), by (state)
-egen med_soil_zone = median(soil_quality), by (zone)
+egen med_soil_ea = median(soil_qty_rev2), by (ea)
+egen med_soil_lga = median(soil_qty_rev2), by (lga)
+egen med_soil_state = median(soil_qty_rev2), by (state)
+egen med_soil_zone = median(soil_qty_rev2), by (zone)
 
-replace soil_quality= med_soil_ea if soil_quality==.
-tab soil_quality, missing
-replace soil_quality= med_soil_lga if soil_quality==.
-tab soil_quality, missing
-replace soil_quality= med_soil_state if soil_quality==.
-tab soil_quality, missing
-replace soil_quality= med_soil_zone if soil_quality==.
-tab soil_quality, missing
+replace soil_qty_rev2= med_soil_ea if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+replace soil_qty_rev2= med_soil_lga if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+replace soil_qty_rev2= med_soil_state if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+replace soil_qty_rev2= med_soil_zone if soil_qty_rev2==.
+tab soil_qty_rev2, missing
 
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
+*replace soil_qty_rev2= med_soil if soil_qty_rev2==.
+tab soil_qty_rev2, missing
 
-replace soil_quality= 2 if soil_quality==1.5
-tab soil_quality, missing
-collapse (max) soil_quality, by (hhid)
-la var soil_quality "1=Good 2= fair 3=Bad "
+la define soil 1 "Good" 2 "fair" 3 "poor"
+
+*la value soil soil_qty_rev2
+
+collapse (mean) soil_qty_rev2 , by (hhid)
+la var soil_qty_rev2 "1=Good 2= fair 3=Bad "
 save "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", replace
 
-*/
 
 ************************* Merging Agricultural Datasets ********************
 
