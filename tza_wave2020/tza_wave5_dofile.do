@@ -1038,7 +1038,7 @@ save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
 
 
-*****************Appending all Malawi Datasets*****************
+*****************Appending all Tanzania Datasets*****************
 use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2010\tanzania_wave2_completedata_2010.dta",clear  
 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012\tanzania_wave3_completedata_2012.dta" 

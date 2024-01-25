@@ -1022,8 +1022,8 @@ keep HHID plot_id field_size region district ea_id
 egen any = rowmiss(plot_id)
 
 drop if any==1
-*duplicates report plot_id
-*duplicates drop plot_id, force
+duplicates report plot_id
+duplicates drop plot_id, force
 sort HHID
 save "${mwi_GHS_W3_created_data}\field_size.dta", replace
 
@@ -1039,13 +1039,16 @@ ren plotid plot_id
 ren y3_hhid HHID
 
 
-*egen any = rowmiss(plot_id)
+egen any = rowmiss(plot_id)
 
-*drop if any==1
+drop if any==1
+*duplicates report plot_id
+*duplicates drop plot_id, force
 
 
+********************Only 14 data matched after dropping duplicates
 
-merge m:1 HHID region district ea_id using "${mwi_GHS_W3_created_data}\field_size.dta"
+merge m:1 HHID plot_id using "${mwi_GHS_W3_created_data}\field_size.dta"
 
 ren ag_d22 soil_quality
 
@@ -1056,7 +1059,7 @@ replace max_fieldsize= . if max_fieldsize!= max_fieldsize
 order field_size soil_quality HHID max_fieldsize
 sort HHID
 keep if field_size== max_fieldsize
-sort HHID occ field_size
+sort HHID plot_id field_size
 
 duplicates report HHID
 
@@ -1065,40 +1068,21 @@ tab dup
 list field_size soil_quality dup
 
 
-list HHID occ  field_size soil_quality dup if dup>0
+list HHID plot_id  field_size soil_quality dup if dup>0
 
 egen soil_qty_rev = min(soil_quality) 
 gen soil_qty_rev2 = soil_quality
 
 replace soil_qty_rev2 = soil_qty_rev if dup>0
 
-list HHID occ  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+list HHID plot_id  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
 
 
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 
 la value soil soil_qty_rev2
-
-
-
-
-
-
-
-
-
-
-
-
-
-ren ag_d22 soil_quality
-tab soil_quality, missing
-egen med_soil = median(soil_quality)
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
-collapse (max) soil_quality, by (HHID)
-la var soil_quality "1=Good 2= fair 3=poor "
+la var soil_qty_rev2 "1=Good 2= fair 3=poor "
 save "${mwi_GHS_W3_created_data}\soil_quality_2016.dta", replace
 
 

@@ -24,7 +24,6 @@ global mwi_GHS_W1_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms
 ************************
 
 use "${mwi_GHS_W1_raw_data}\HouseholdGeovariables_IHS3_Rerelease_10.dta", clear
-*merge 1:m case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
 
 
 ren afmnslp_pct  plot_slope
@@ -40,6 +39,16 @@ la var plot_elevation "Elevation of plot"
 la var plot_wetness "Potential wetness index of plot"
 save "${mwi_GHS_W1_created_data}\geodata_2010.dta", replace
 
+
+
+
+
+
+
+
+**************
+*food prices
+**************
 
 
 ***************modifying conversion file
@@ -77,11 +86,7 @@ save "${mwi_GHS_W1_created_data}\hhid.dta", replace
 
 
 
-**************
-*food prices
-**************
-
-
+******commodity file
 use "${mwi_GHS_W1_raw_data}\com_ck_10.dta" , clear
 
 
@@ -152,10 +157,7 @@ sort region district ea_id
 save "${mwi_GHS_W1_created_data}\maize_pr.dta", replace
 
 
-
-**********************
-*HH
-**********************
+********HH
 use "${mwi_GHS_W1_raw_data}\hh_mod_a_filt_10.dta",clear 
 
 rename hh_a01 district
@@ -753,7 +755,7 @@ collapse  (max) net_seller net_buyer, by(HHID)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
 sort HHID
-save "${mwi_GHS_W1_created_data}\net_buyers_sellers_2010.dta", replace
+save "${mwi_GHS_W1_created_data}\net_buyer_seller_2010.dta", replace
 
 
 
@@ -829,56 +831,57 @@ clear
  
  
 
-use "${mwi_GHS_W1_raw_data}\ag_mod_p_10.dta",clear 
 
-gen season=2 //perm
-ren ag_p0b plot_id
-ren ag_p0d crop_code
-ren ag_p02a area
-ren ag_p02b unit
-duplicates drop //one duplicate entry
-drop if plot_id=="" //6,732 observations deleted //Note from ALT 8.14.2023: So if you check the data at this point, a large number of obs have no plot_id (and are also zeroes) there's no reason to hold on to these observations since they cannot be matched with any other module and don't appear to contain meaningful information.
-keep if strpos(plot_id, "T") & plot_id!="" //MGM 9.13.2023: 1,721 obs deleted - only keep unique plot_ids so as to not over estimate plot areas with plantation sizes (plots that are duplicated in both perm and rainy or dry)
-collapse (max) area, by(case_id plot_id crop_code season unit)
-collapse (sum) area, by(case_id plot_id season unit)
-replace area=. if area==0 //the collapse (sum) function turns blank observations in 0s - as the raw data for ag_mod_p have no observations equal to 0, we can do a mass replace of 0s with blank observations so that we are not reporting 0s where 0s were not reported.
-drop if area==. & unit==.
-
-gen area_acres_est = area if unit==1 //Permanent crops in acres
-replace area_acres_est = (area*2.47105) if unit == 2 & area_acres_est ==. //Permanent crops in hectares
-replace area_acres_est = (area*0.000247105) if unit == 3 & area_acres_est ==.	//Permanent crops in square meters
-keep case_id plot_id season area_acres_est
-
-tempfile ag_perm
-save `ag_perm'
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_c_10.dta", clear
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
 gen season=0 //rainy
-append using "${mwi_GHS_W1_raw_data}\ag_mod_j_10.dta", gen(dry)
-replace season=1 if season==. //dry
+
 ren ag_c00 plot_id
-replace plot_id=ag_j00 if plot_id=="" //1,447 real changes
 
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
 replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
-replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
 
-append using `ag_perm'
-lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-label values season season
-//replace area_acres_meas = ag_pXXX if area_acres_meas == . // MGM 8.3.2023: there is not measurement for perm crops //GPS measure - permanent crops
+gen field_size= (area_acres_meas* (1/2.47105))
+*replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+tab field_size, missing
 
-gen field_size= (area_acres_est* (1/2.47105))
-replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+
+egen median_ea_id = median(field_size), by (ea_id)
+egen median_district  = median(field_size), by (district )
+egen median_region  = median(field_size), by (region )
+
+
+
+replace field_size = median_ea_id if field_size ==.
+tab field_size,missing
+
+replace field_size = median_district if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_region if field_size ==.
+tab field_size,missing
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ren HHID HHID
 collapse (sum) field_size, by (HHID)
@@ -904,60 +907,47 @@ save "${mwi_GHS_W1_created_data}\land_holding_2010.dta", replace
  ********************************************************************************
 * Soil Quality *
 ********************************************************************************
-use "${mwi_GHS_W1_raw_data}\ag_mod_p_10.dta",clear 
-
-gen season=2 //perm
-ren ag_p0b plot_id
-ren ag_p0d crop_code
-ren ag_p02a area
-ren ag_p02b unit
-duplicates drop //one duplicate entry
-drop if plot_id=="" //6,732 observations deleted //Note from ALT 8.14.2023: So if you check the data at this point, a large number of obs have no plot_id (and are also zeroes) there's no reason to hold on to these observations since they cannot be matched with any other module and don't appear to contain meaningful information.
-keep if strpos(plot_id, "T") & plot_id!="" //MGM 9.13.2023: 1,721 obs deleted - only keep unique plot_ids so as to not over estimate plot areas with plantation sizes (plots that are duplicated in both perm and rainy or dry)
-collapse (max) area, by(case_id plot_id crop_code season unit)
-collapse (sum) area, by(case_id plot_id season unit)
-replace area=. if area==0 //the collapse (sum) function turns blank observations in 0s - as the raw data for ag_mod_p have no observations equal to 0, we can do a mass replace of 0s with blank observations so that we are not reporting 0s where 0s were not reported.
-drop if area==. & unit==.
-
-gen area_acres_est = area if unit==1 //Permanent crops in acres
-replace area_acres_est = (area*2.47105) if unit == 2 & area_acres_est ==. //Permanent crops in hectares
-replace area_acres_est = (area*0.000247105) if unit == 3 & area_acres_est ==.	//Permanent crops in square meters
-keep case_id plot_id season area_acres_est
-
-tempfile ag_perm
-save `ag_perm'
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_c_10.dta", clear
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
 gen season=0 //rainy
-append using "${mwi_GHS_W1_raw_data}\ag_mod_j_10.dta", gen(dry)
-replace season=1 if season==. //dry
+
 ren ag_c00 plot_id
-replace plot_id=ag_j00 if plot_id=="" //1,447 real changes
 
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
 replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_j05a if ag_j05b==1 										//Replace with dry season measures if rainy season is not available
-replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
 
-append using `ag_perm'
-lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-label values season season
-//replace area_acres_meas = ag_pXXX if area_acres_meas == . // MGM 8.3.2023: there is not measurement for perm crops //GPS measure - permanent crops
+gen field_size= (area_acres_meas* (1/2.47105))
+*replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+tab field_size, missing
 
-gen field_size= (area_acres_est* (1/2.47105))
-replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+
+egen median_ea_id = median(field_size), by (ea_id)
+egen median_district  = median(field_size), by (district )
+egen median_region  = median(field_size), by (region )
+
+
+
+replace field_size = median_ea_id if field_size ==.
+tab field_size,missing
+
+replace field_size = median_district if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_region if field_size ==.
+tab field_size,missing
 
 ren HHID HHID
 keep HHID plot_id field_size case_id ea_id
-*collapse (max) field_size, by (HHID)
+egen any = rowmiss(plot_id)
+
+drop if any==1
+sort HHID
 save "${mwi_GHS_W1_created_data}\field_size.dta", replace
 
 
@@ -965,6 +955,12 @@ save "${mwi_GHS_W1_created_data}\field_size.dta", replace
 use "${mwi_GHS_W1_raw_data}\ag_mod_d_10.dta" , clear
 ren ag_d00 plot_id
 ren HHID HHID
+
+egen any = rowmiss(plot_id)
+
+drop if any==1
+
+
 
 merge m:1 HHID plot_id using "${mwi_GHS_W1_created_data}\field_size.dta"
 
@@ -974,16 +970,36 @@ order HHID plot_id field_size soil_quality
 
 
 
+*how to get them my max fieldsize
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID plot_id field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size soil_quality dup
 
 
-/*
-egen med_soil = median(soil_quality)
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
+list HHID plot_id  field_size soil_quality dup if dup>0
 
-collapse (max) soil_quality, by (HHID)
-la var soil_quality "1=Good 2= fair 3=poor "
-save "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", replace */
+egen soil_qty_rev = min(soil_quality) 
+gen soil_qty_rev2 = soil_quality
+
+replace soil_qty_rev2 = soil_qty_rev if dup>0
+
+list HHID plot_id  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+
+
+collapse (mean) soil_qty_rev2 , by (HHID)
+la define soil 1 "Good" 2 "fair" 3 "poor"
+
+la value soil soil_qty_rev2
+save "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", replace 
 
 
 
@@ -1026,7 +1042,7 @@ sort HHID
 merge 1:1 HHID using "${mwi_GHS_W1_created_data}\food_prices_2010.dta", gen (foodprice)
 sort HHID
 
-merge 1:1 HHID using "${mwi_GHS_W1_created_data}\net_buyers_sellers_2010.dta", gen (net)
+merge 1:1 HHID using "${mwi_GHS_W1_created_data}\net_buyer_seller_2010.dta", gen (net)
 sort HHID
 
 merge 1:1 HHID using "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", gen (soil)

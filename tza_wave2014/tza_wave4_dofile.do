@@ -34,39 +34,22 @@ ren id_02 district
 ren id_05 ea
 
 
+ 
+tab cm_g_weight if item_code==104
+tab cm_g_price if item_code==104
+*br cm_g_weight cm_g_price item_name  item_code if item_code==104
 
-tab vil_loc_weight if item_id==2
-tab vil_loc_price if item_id==2
-*br vil_loc_unit_os vil_loc_weight vil_loc_price  item_id if item_id==2
-
-gen maize_price = vil_loc_price  if item_id==2
+gen maize_price = cm_g_price/cm_g_weight  if item_code==104
 sum maize_price,detail
 tab maize_price
 
-*replace maize_price = 900 if maize_price >900 & maize_price<. //bottom 5%
-*replace maize_price = 50 if maize_price< 50
-*tab maize_price,missing
+replace maize_price = 800 if maize_price >800 & maize_price<. //bottom 1%
+tab maize_price,missing
 
 
 egen median_pr_ea_id = median(maize_price), by (ea)
-egen median_pr_ea  = median(maize_price), by (id_03 )
-egen median_pr_ea_  = median(maize_price), by (id_05 )
-
 egen median_pr_district  = median(maize_price), by (district )
 egen median_pr_region  = median(maize_price), by (region )
-
-
-
-egen num_pr_ea_id = count(maize_price), by (ea)
-egen num_pr_district  = count(maize_price), by (district )
-egen num_pr_region = count(maize_price), by (region )
-
-
-
-tab num_pr_ea_id
-tab num_pr_region
-tab num_pr_district
-
 
 
 
@@ -74,41 +57,35 @@ gen maize_price_mr  = maize_price
 
 replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
 tab maize_price_mr,missing
-replace maize_price_mr = median_pr_ea if maize_price_mr==. 
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_ea_ if maize_price_mr==. 
-tab maize_price_mr,missing
 replace maize_price_mr = median_pr_district if maize_price_mr==.
 tab maize_price_mr,missing
 replace maize_price_mr = median_pr_region if maize_price_mr==. 
 tab maize_price_mr,missing
 
-egen mid_maize= median(maize_price)
-replace maize_price_mr = mid_maize if maize_price_mr==.
-tab maize_price_mr,missing
+*egen mid_maize= median(maize_price)
+*replace maize_price_mr = mid_maize if maize_price_mr==.
+*tab maize_price_mr,missing
 
 
 
 
 ************rice
-tab vil_loc_weight if item_id==1
-tab vil_loc_price if item_id==1
-*br vil_loc_unit_os vil_loc_weight vil_loc_price  item_id if item_id==2
+ 
+tab cm_g_weight if item_code==102
+tab cm_g_price if item_code==102
+*br cm_g_weight cm_g_price item_name  item_code if item_code==102
 
-gen rice_price = vil_loc_price  if item_id==1
+gen rice_price = cm_g_price/cm_g_weight  if item_code==102
 
 sum rice_price,detail
 tab rice_price
 
-*replace rice_price = 1000 if rice_price >1000 & rice_price<.
-*replace rice_price = 25 if rice_price< 25
-*tab rice_price,missing
+replace rice_price = 1000 if rice_price >1000 & rice_price<. //bottom 5%
+replace rice_price = 250 if rice_price< 250                    //top 5%
+tab rice_price,missing
 
 
 egen median_ea_id = median(rice_price), by (ea)
-egen median_ea  = median(rice_price), by (id_03 )
-egen median_ea_  = median(rice_price), by (id_05 )
-
 egen median_district  = median(rice_price), by (district )
 egen median_region  = median(rice_price), by (region )
 
@@ -119,10 +96,6 @@ egen median_region  = median(rice_price), by (region )
 gen rice_price_mr  = rice_price
 
 replace rice_price_mr = median_pr_ea_id if rice_price_mr==. 
-tab rice_price_mr,missing
-replace rice_price_mr = median_pr_ea if rice_price_mr==. 
-tab rice_price_mr,missing
-replace rice_price_mr = median_pr_ea_ if rice_price_mr==. 
 tab rice_price_mr,missing
 replace rice_price_mr = median_pr_district if rice_price_mr==.
 tab rice_price_mr,missing
@@ -137,10 +110,10 @@ tab rice_price_mr,missing
 
 
 sort region district ea
-collapse  (max) maize_price_mr rice_price_mr id_03 id_05, by(region district ea)
+collapse  (max) maize_price_mr rice_price_mr, by(region district ea)
 label var maize_price_mr "commercial price of maize in naira"
 label var rice_price_mr "commercial price of rice in naira"
-save "${tza_GHS_W5_created_data}\food_pr.dta", replace
+save "${tza_GHS_W4_created_data}\food_pr.dta", replace
 
 
 
@@ -163,37 +136,19 @@ gen rural = (clustertype==1)
 keep y4_hhid region district ward village region_name district_name ward_name village_name ea rural weight strataid clusterid
 lab var rural "1=Household lives in a rural area"
 
-merge m:1 region district ea using "${tza_GHS_W5_created_data}\food_pr.dta"
+merge m:1 region district ea using "${tza_GHS_W4_created_data}\food_pr.dta"
 
 
 ****MAIZE
 
 egen median_pr_ea_id = median(maize_price), by (ea)
-egen median_pr_ea  = median(maize_price), by (id_03 )
-egen median_pr_ea_  = median(maize_price), by (id_05 )
-
 egen median_pr_district  = median(maize_price), by (district )
 egen median_pr_region  = median(maize_price), by (region )
 
 
 
-egen num_pr_ea_id = count(maize_price), by (ea)
-egen num_pr_district  = count(maize_price), by (district )
-egen num_pr_region = count(maize_price), by (region )
-
-
-
-tab num_pr_ea_id
-tab num_pr_region
-tab num_pr_district
-
-
 
 replace maize_price_mr = median_pr_ea_id if maize_price_mr==. 
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_ea if maize_price_mr==. 
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_ea_ if maize_price_mr==. 
 tab maize_price_mr,missing
 replace maize_price_mr = median_pr_district if maize_price_mr==.
 tab maize_price_mr,missing
@@ -208,9 +163,6 @@ tab maize_price_mr,missing
 
 
 egen median_ea_id = median(rice_price), by (ea)
-egen median_ea  = median(rice_price), by (id_03 )
-egen median_ea_  = median(rice_price), by (id_05 )
-
 egen median_district  = median(rice_price), by (district )
 egen median_region  = median(rice_price), by (region )
 
@@ -219,10 +171,6 @@ egen median_region  = median(rice_price), by (region )
 
 replace rice_price_mr = median_pr_ea_id if rice_price_mr==. 
 tab rice_price_mr,missing
-replace rice_price_mr = median_pr_ea if rice_price_mr==. 
-tab rice_price_mr,missing
-replace rice_price_mr = median_pr_ea_ if rice_price_mr==. 
-tab rice_price_mr,missing
 replace rice_price_mr = median_pr_district if rice_price_mr==.
 tab rice_price_mr,missing
 replace rice_price_mr = median_pr_region if rice_price_mr==. 
@@ -230,11 +178,11 @@ tab rice_price_mr,missing
 
 
 
-ren y5_hhid HHID
+ren y4_hhid HHID
 collapse  (max) maize_price_mr rice_price_mr, by(HHID)
 label var maize_price_mr "commercial price of maize in naira"
 label var rice_price_mr "commercial price of rice in naira"
-save "${tza_GHS_W5_created_data}\food_prices_2020.dta", replace
+save "${tza_GHS_W4_created_data}\food_prices_2014.dta", replace
 
 
 
@@ -803,168 +751,13 @@ la var safety_net "=1 if received cash transfer, cash for work, food for work or
 save "${tza_GHS_W4_created_data}\safety_net_2014.dta", replace
 
 
-**************************************
-*Food Prices
-**************************************
+**************
+*Net Buyers and Sellers
+***************
 use "${tza_GHS_W4_raw_data}\HH_SEC_J1.dta",clear 
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
 ren y4_hhid HHID
-*hh_j03_2   qty purchased by household (7days)
-*hh_j03_1    units purchased by household (7days)
-*hh_j04    cost of purchase by household (7days)
-
-
-
-
-*********Getting the price for maize only**************
-
-//   Unit           Conversion Factor for maize
-//1. Kilogram       1
-//18.gram        	0.001
-//15.litre     		1
-//19.millitre       0.001
-//9. pieces	        0.35
-
-gen conversion =1
-replace conversion=1 if hh_j03_1==1 | hh_j03_1 ==3
-gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*0.001 if hh_j03_1==2 |hh_j03_1==4 
-replace conversion = food_size*0.35 if hh_j03_1==5
-			
-tab conversion, missing
-
-*label list itemcode
-
-gen food_price_maize = hh_j03_2* conversion if itemcode==104
-
-gen maize_price = hh_j04/food_price_maize if itemcode==104
-
-*br hh_j03_1 conversion hh_j03_2 hh_j04 food_price_maize maize_price itemcode if itemcode<=500
-
-sum maize_price,detail
-tab maize_price
-
-*replace maize_price = 2000 if maize_price >2000 & maize_price<.
-*replace maize_price = 50 if maize_price< 50
-tab maize_price,missing
-
-
-egen median_pr_ea_id = median(maize_price), by (ea)
-egen median_pr_region  = median(maize_price), by (region )
-egen median_pr_stratum  = median(maize_price), by (strataid )
-egen median_pr_district  = median(maize_price), by (district )
-
-
-
-
-egen num_pr_ea_id = count(maize_price), by (ea)
-egen num_pr_region = count(maize_price), by (region )
-egen num_pr_stratum = count(maize_price), by (strataid )
-egen num_pr_district  = count(maize_price), by (district )
-
-
-
-
-tab num_pr_ea_id
-tab num_pr_region
-tab num_pr_stratum
-tab num_pr_district
-
-
-
-
-gen maize_price_mr  = maize_price
-
-replace maize_price_mr = median_pr_ea_id if maize_price_mr==. & num_pr_ea_id >= 33
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_region if maize_price_mr==. & num_pr_region>= 33
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_stratum if maize_price_mr==.  & num_pr_stratum>= 33
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_district if maize_price_mr==. & num_pr_district>= 33
-tab maize_price_mr,missing
-
-
-egen mid_price = median(maize_price)
-
-
-replace maize_price_mr = mid_price if maize_price_mr==.
-tab maize_price_mr,missing
-
-
-
-
-*********Getting the price for rice only**************
-
-//   Unit           Conversion Factor for maize
-//1. Kilogram       1
-//18.gram        	0.001
-//15.litre     		1
-//19.millitre       0.001
-//9. pieces	        0.35
-
-
-
-gen food_price_rice = hh_j03_2* conversion if itemcode==101
-
-gen rice_price = hh_j04/food_price_rice if itemcode==101
-
-*br hh_j03_1 conversion hh_j03_2 hh_j04 food_price_rice rice_price itemcode if itemcode<=500
-
-sum rice_price,detail
-tab rice_price
-
-*replace rice_price = 1000 if rice_price >1000 & rice_price<.
-*replace rice_price = 25 if rice_price< 25
-*tab rice_price,missing
-
-
-egen medianr_pr_ea_id = median(rice_price), by (ea)
-egen medianr_pr_region  = median(rice_price), by (region )
-egen medianr_pr_stratum  = median(rice_price), by (strataid)
-egen medianr_pr_district  = median(rice_price), by (district )
-
-
-
-
-egen numr_pr_ea_id = count(rice_price), by (ea)
-egen numr_pr_region = count(rice_price), by (region )
-egen numr_pr_stratum = count(rice_price), by (strataid )
-egen numr_pr_district  = count(rice_price), by (district )
-
-
-tab numr_pr_ea_id
-tab numr_pr_region
-tab numr_pr_stratum
-tab numr_pr_district
-
-
-
-
-gen rice_price_mr  = rice_price
-
-replace rice_price_mr = medianr_pr_ea_id if rice_price_mr==. & numr_pr_ea_id >= 1
-tab rice_price_mr,missing
-replace rice_price_mr = medianr_pr_region if rice_price_mr==. & numr_pr_region>= 1
-tab rice_price_mr,missing
-replace rice_price_mr = medianr_pr_stratum if rice_price_mr==.  & numr_pr_stratum>= 1
-tab rice_price_mr,missing
-replace rice_price_mr = medianr_pr_district if rice_price_mr==. & numr_pr_district>= 1
-tab rice_price_mr,missing
-
-
-egen midr_price = median(rice_price)
-
-
-replace rice_price_mr = midr_price if rice_price_mr==.
-tab rice_price_mr,missing
-
-
-
-**************
-*Net Buyers and Sellers
-***************
 *hh_j03_2 from purchases
 *hh_j05_2 from own production
 
@@ -990,13 +783,11 @@ tab net_buyer,missing
 
 
 
-collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(HHID)
+collapse  (max) net_seller net_buyer, by(HHID)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
 sort HHID
-save "${tza_GHS_W4_created_data}\food_prices_2014.dta", replace
+save "${tza_GHS_W4_created_data}\net_buyer_seller_2014.dta", replace
 
 
 
@@ -1223,6 +1014,8 @@ sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\safety_net_2014.dta", gen (safety)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\food_prices_2014.dta", gen (foodprices)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\net_buyer_seller_2014.dta", gen (net)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\soil_quality_2014.dta", gen (soil)
 sort HHID

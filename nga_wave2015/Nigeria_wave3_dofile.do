@@ -75,12 +75,14 @@ save "${Nigeria_GHS_W3_created_data}\geodata_2015.dta", replace
 **************************
 use "${Nigeria_GHS_W3_raw_data}\sectc2a_plantingw3.dta", clear
 
-br if item_cd == 20
-br if item_cd ==20 & c2q2==1
+*br if item_cd == 20
+*br if item_cd ==20 & c2q2==1
+tab c2q3 if item_cd ==20 & c2q2==1
 tab c2q2 if item_cd==20
 
 
-
+*label var maize_price_mr "commercial price of maize in naira"
+*label var rice_price_mr "commercial price of rice in naira"
 
 
 
@@ -682,162 +684,14 @@ save "${Nigeria_GHS_W3_created_data}\safety_net_2015.dta", replace
 
 
 
-**************************************
-*Food Prices
-**************************************
-use "${Nigeria_GHS_W3_raw_data}\sect7b_plantingw3.dta", clear
-
-*s7bq3a   qty purchased by household (7days)
-*s7bq3b s7bq3c     units purchased by household (7days)
-*s7bq4    cost of purchase by household (7days)
-
-
-
-
-*********Getting the price for maize only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//   Kilogram       1
-//   gram        	0.001
-//	 litre     		1
-//	 cenlitre     	0.01
-//	 congo          1.5
-//	 derica         0.75
-//	 mudu           0.30
-//	 pieces	        0.35
-
-gen conversion =1
-replace conversion=1 if s7bq3b==1 | s7bq3b ==3
-gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
-replace conversion = food_size*0.001 if s7bq3b==2 |	s7bq3b==4 
-replace conversion = food_size*0.30 if s7bq3b==30 |	s7bq3b==31
-replace conversion = food_size*1.5 if s7bq3b==20 |	s7bq3b==21
-replace conversion = food_size*0.75 if s7bq3b==40 |	s7bq3b==41	|	s7bq3b==42 |	s7bq3b==43
-replace conversion = food_size*0.35 if s7bq3b==80 |	s7bq3b==81	|	s7bq3b==82 			
-tab conversion, missing
-
-
-
-gen food_price_maize = s7bq3a* conversion if item_cd==16
-
-gen maize_price  = s7bq4/food_price_maize if item_cd==16
-
-*br  s7bq3b conversion s7bq3a s7bq4  food_price_maize maize_price item_cd if item_cd<=27
-
-sum maize_price,detail
-tab maize_price
-
-replace maize_price = 600 if maize_price >600 & maize_price<.
-replace maize_price = 50 if maize_price< 50
-tab maize_price,missing
-
-
-
-egen median_pr_ea = median(maize_price), by (ea)
-egen median_pr_lga = median(maize_price), by (lga)
-egen median_pr_sector = median(maize_price), by (sector)
-egen median_pr_state = median(maize_price), by (state)
-egen median_pr_zone = median(maize_price), by (zone)
-
-egen num_pr_ea = count(maize_price), by (ea)
-egen num_pr_lga = count(maize_price), by (lga)
-egen num_pr_sector = count(maize_price), by (sector)
-egen num_pr_state = count(maize_price), by (state)
-egen num_pr_zone = count(maize_price), by (zone)
-
-tab num_pr_ea
-tab num_pr_lga
-tab num_pr_state
-tab num_pr_zone
-
-
-gen maize_price_mr= maize_price
-
-replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=8
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=8
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=8
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=8
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_sector if maize_price_mr==. & num_pr_sector>=8
-tab maize_price_mr,missing
-
-
-
-*********Getting the price for rice only**************
-* one congo is 1.5kg
-*one derica is half a congo (0.75kg)
-*one mudu is 1.5kg/5 (one congo is 5times one mudu) (0.3kg)
-//   Unit           Conversion Factor for maize
-//   Kilogram       1
-//   gram        	0.001
-//	 litre     		1
-//	 cenlitre     	0.01
-//	 congo          1.5
-//	 derica         0.75
-//	 mudu           0.30
-//	 pieces	        0.35
-
-
-
-
-gen food_price_rice = s7bq3a* conversion if item_cd==13
-
-gen rice_price  = s7bq4/food_price_rice if item_cd==13 
-
-*br  s7bq3b conversion s7bq3a food_price_rice s7bq4 rice_price item_cd if item_cd<=17
-
-sum rice_price,detail
-tab rice_price
-
-replace rice_price = 1000 if rice_price >1000 & rice_price<.
-replace rice_price = 30 if rice_price< 30
-tab rice_price,missing
-
-
-
-egen median_rice_ea = median(rice_price), by (ea)
-egen median_rice_lga = median(rice_price), by (lga)
-egen median_rice_state = median(rice_price), by (state)
-egen median_rice_zone = median(rice_price), by (zone)
-
-egen num_rice_ea = count(rice_price), by (ea)
-egen num_rice_lga = count(rice_price), by (lga)
-egen num_rice_state = count(rice_price), by (state)
-egen num_rice_zone = count(rice_price), by (zone)
-
-tab num_rice_ea
-tab num_rice_lga
-tab num_rice_state
-tab num_rice_zone
-
-
-gen rice_price_mr = rice_price
-
-replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=7
-tab rice_price_mr,missing
-
-replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=7
-tab rice_price_mr,missing
-
-replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=7
-tab rice_price_mr,missing
-
-replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=7
-tab rice_price_mr,missing
 
 
 
 **************
 *Net Buyers and Sellers
 ***************
+use "${Nigeria_GHS_W3_raw_data}\sect7b_plantingw3.dta", clear
+
 *s7bq5a from purchases
 *s7bq6a from own production
 
@@ -863,11 +717,9 @@ tab net_buyer,missing
 
 
 
-collapse  (max) net_seller net_buyer maize_price_mr  rice_price_mr, by(hhid)
+collapse  (max) net_seller net_buyer, by(hhid)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
 sort hhid
 save "${Nigeria_GHS_W3_created_data}\food_prices_2015.dta", replace
 

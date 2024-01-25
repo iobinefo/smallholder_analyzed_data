@@ -1061,6 +1061,24 @@ la var soil_qty_rev2 "1=Good 2= fair 3=Bad "
 save "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", replace
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ************************* Merging Agricultural Datasets ********************
 
 use "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace

@@ -39,6 +39,26 @@ la var plot_wetness "Potential wetness index of plot"
 save "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", replace
 
 
+***********************************
+*Food Prices from Community
+*********************************
+use "${Nigeria_GHS_W4_raw_data}\sectc2_plantingw4.dta", clear
+*rice is 13, maize is 16
+
+*br if item_cd == 20
+*br if item_cd ==20 & c2q2==1
+tab c2q3 if item_cd ==16 & c2q2==1
+tab c2q2 if item_cd==16
+tab c2q3 if item_cd ==16
+tab c2q3 if item_cd ==13
+*label var maize_price_mr "commercial price of maize in naira"
+*label var rice_price_mr "commercial price of rice in naira"
+
+
+
+
+
+
 
 
 *********************************************** 
@@ -588,131 +608,13 @@ save "${Nigeria_GHS_W4_created_data}\safety_net_2018.dta", replace
 
 
 
-**************************************
-*Food Prices
-**************************************
-use "${Nigeria_GHS_W4_raw_data}\sect7b_plantingw4.dta", clear
 
-*s7bq9a   qty purchased by household (7days)
-*s7bq9_cvn conversion factor
-*s7bq10    cost of purchase by household (7days)
-
-
-
-
-
-gen food_price_maize = s7bq9a* s7bq9_cvn if item_cd==16
-
-gen maize_price  = s7bq10/food_price_maize if item_cd==16
-
-*br s7bq9b s7bq9a s7bq9_cvn  food_price_maize s7bq10 maize_price item_cd if item_cd<=16
-*br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=.
- *br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==30
- *tab s7bq2b if  item_cd==16 & s7bq2_cvn!=.
- *br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==50
-
-*br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==20
-
-*br  item_cd s7bq2a s7bq2b s7bq2c s7bq2_cvn if  item_cd==16 & s7bq2_cvn!=. & s7bq2b==40
-
-
-sum maize_price,detail
-tab maize_price
-
-replace maize_price = 700 if maize_price >700 & maize_price<.
-
-tab maize_price,missing
-
-
-
-egen median_pr_ea = median(maize_price), by (ea)
-egen median_pr_lga = median(maize_price), by (lga)
-egen median_pr_sector = median(maize_price), by (sector)
-egen median_pr_state = median(maize_price), by (state)
-egen median_pr_zone = median(maize_price), by (zone)
-
-egen num_pr_ea = count(maize_price), by (ea)
-egen num_pr_lga = count(maize_price), by (lga)
-egen num_pr_sector = count(maize_price), by (sector)
-egen num_pr_state = count(maize_price), by (state)
-egen num_pr_zone = count(maize_price), by (zone)
-
-tab num_pr_ea
-tab num_pr_lga
-tab num_pr_state
-tab num_pr_zone
-
-
-gen maize_price_mr = maize_price
-
-replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=8
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=8
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=8
-tab maize_price_mr,missing
-
-replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=8
-tab maize_price_mr,missing
-replace maize_price_mr = median_pr_sector if maize_price_mr==. & num_pr_sector>=8
-tab maize_price_mr,missing
-
-
-
-*********Getting the price for rice only**************
-
-
-
-gen food_price_rice = s7bq9a* s7bq9_cvn if item_cd==13
-
-gen rice_price  = s7bq10/food_price_rice if item_cd==13 
-
-*br s7bq9b s7bq9a s7bq9_cvn  food_price_rice s7bq10 rice_price item_cd if item_cd<=27
-
-sum rice_price,detail
-tab rice_price
-
-replace rice_price = 750 if rice_price >750 & rice_price<.  //one percent
-replace rice_price = 100 if rice_price< 100
-tab rice_price,missing
-
-
-
-egen median_rice_ea = median(rice_price), by (ea)
-egen median_rice_lga = median(rice_price), by (lga)
-egen median_rice_state = median(rice_price), by (state)
-egen median_rice_zone = median(rice_price), by (zone)
-
-egen num_rice_ea = count(rice_price), by (ea)
-egen num_rice_lga = count(rice_price), by (lga)
-egen num_rice_state = count(rice_price), by (state)
-egen num_rice_zone = count(rice_price), by (zone)
-
-tab num_rice_ea
-tab num_rice_lga
-tab num_rice_state
-tab num_rice_zone
-
-
-gen rice_price_mr  = rice_price
-
-replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=26
-tab rice_price_mr,missing
-
-replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=26
-tab rice_price_mr,missing
-
-replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=26
-tab rice_price_mr,missing
-
-replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=26
-tab rice_price_mr,missing
 
 **************
 *Net Buyers and Sellers
 ***************
+use "${Nigeria_GHS_W4_raw_data}\sect7b_plantingw4.dta", clear
+
 *s7bq5a from purchases
 *s7bq6a from own production
 
@@ -735,11 +637,9 @@ replace net_buyer=0 if net_buyer==.
 tab net_buyer,missing
 
 
-collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(hhid)
+collapse  (max) net_seller net_buyer, by(hhid)
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
 sort hhid
 save "${Nigeria_GHS_W4_created_data}\food_prices_2018.dta", replace
 

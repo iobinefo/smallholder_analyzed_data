@@ -65,6 +65,21 @@ save "${mwi_GHS_W2_created_data}\geodata_2013.dta", replace
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+**************
+*food prices
+**************
+
 ***************modifying conversion file
 
 use "C:\Users\obine\Downloads\ihs_seasonalcropconversion_factor_2020.dta", clear
@@ -76,9 +91,7 @@ save "${mwi_GHS_W2_created_data}\coversionfactor_for_maize_consumption.dta", rep
 
 
 
-**********************
-*HH_id
-**********************
+
 
 //dropped duplicate observation....................
 
@@ -97,9 +110,6 @@ save "${mwi_GHS_W2_created_data}\hhid.dta", replace
 
 
 
-**************
-*food prices
-**************
 
 
 use "${mwi_GHS_W2_raw_data}\com_ck_10.dta" , clear
@@ -173,10 +183,7 @@ sort region district ea_id
 save "${mwi_GHS_W2_created_data}\maize_pr.dta", replace
 
 
-
-**********************
-*HH
-**********************
+***********merging to get HHID
 use "${mwi_GHS_W2_raw_data}\hh_mod_a_filt_13.dta",clear 
 
 rename hh_a10a ta

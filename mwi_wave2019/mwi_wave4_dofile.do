@@ -894,39 +894,56 @@ save "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", replace
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
  ********************************************************************************
 * PLOT AREAS *
 ********************************************************************************
 use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
 	gen season = 0 
-append using "${mwi_GHS_W4_raw_data}\ag_mod_j_19.dta" // HS 2.3.23: DRY SEASON crop data; more GARDEN and PLOT info
-	replace season = 1 if season ==. 
-append using "${mwi_GHS_W4_raw_data}\ag_mod_o2_19.dta" // HS 2.3.23:  PERMANENT CROPS
-	replace season = 2 if season == .
-
+merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\hhids.dta"
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_j05a if ag_j05b==1										//Replace with dry season measures if rainy season is not available
-replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_o04a if ag_o04b==1										//Permanent crops in acres
-replace area_acres_est = (ag_o04a*2.47105) if ag_o04b == 2 & area_acres_est ==.		//Permanent crops in hectares
-replace area_acres_est = (ag_o04a*0.000247105) if ag_o04b == 3 & area_acres_est ==. //Permanent crops in square meters
+*replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
-replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
-replace area_acres_meas = ag_o04c if area_acres_meas == . 							//GPS measure - permanent crops
-keep if area_acres_est !=. | area_acres_meas !=. 									//Keep if acreage or GPS measure info is available
 
-lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-	label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-	label values season season 
 
-gen field_size= (area_acres_est* (1/2.47105))
-replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+gen field_size= (area_acres_meas* (1/2.47105))
+replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
+
+egen median_ea_id = median(field_size), by (ea_id)
+egen median_district  = median(field_size), by (district )
+egen median_region  = median(field_size), by (region )
+
+
+
+replace field_size = median_ea_id if field_size ==.
+tab field_size,missing
+
+replace field_size = median_district if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_region if field_size ==.
+tab field_size,missing
+
+
+
+
+
 
 ren y4_hhid HHID
 collapse (sum) field_size, by (HHID)
@@ -939,149 +956,107 @@ save "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
 *******************************
 *Soil Quality
 *******************************
+use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
+	gen season = 0 
+merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\hhids.dta"
+* Counting acreage
+gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
+replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
+*replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
+
+* GPS MEASURE
+gen area_acres_meas = ag_c04c														//GPS measure - rainy
+
+
+gen field_size= (area_acres_meas* (1/2.47105))
+replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
+
+egen median_ea_id = median(field_size), by (ea_id)
+egen median_district  = median(field_size), by (district )
+egen median_region  = median(field_size), by (region )
+
+
+
+replace field_size = median_ea_id if field_size ==.
+tab field_size,missing
+
+replace field_size = median_district if field_size ==. 
+tab field_size ,missing
+
+replace field_size = median_region if field_size ==.
+tab field_size,missing
+
+ren y4_hhid HHID
+ren plotid plot_id
+keep HHID plot_id field_size region district ea_id
+
+egen any = rowmiss(plot_id)
+
+drop if any==1
+duplicates report plot_id
+duplicates drop plot_id, force
+sort HHID
+save "${mwi_GHS_W4_created_data}\field_size.dta", replace
+
+
+
+
+
+
 
 use "${mwi_GHS_W4_raw_data}\ag_mod_d_19.dta" , clear
+ren plotid plot_id
+
 ren y4_hhid HHID
+egen any = rowmiss(plot_id)
+
+drop if any==1
+
+
+********************only 13 observations merged
+merge m:1 HHID plot_id using "${mwi_GHS_W4_created_data}\field_size.dta"
+
 
 ren ag_d22 soil_quality
-tab soil_quality, missing
-egen med_soil = median(soil_quality)
-replace soil_quality= med_soil if soil_quality==.
-tab soil_quality, missing
-collapse (max) soil_quality, by (HHID)
-la var soil_quality "1=Good 2= fair 3=poor "
+
+
+*how to get them my max fieldsize
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size soil_quality HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID plot_id field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size soil_quality dup
+
+
+list HHID plot_id  field_size soil_quality dup if dup>0
+
+egen soil_qty_rev = min(soil_quality) 
+gen soil_qty_rev2 = soil_quality
+
+replace soil_qty_rev2 = soil_qty_rev if dup>0
+
+list HHID plot_id  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+
+
+collapse (mean) soil_qty_rev2 , by (HHID)
+la define soil 1 "Good" 2 "fair" 3 "poor"
+
+la value soil soil_qty_rev2
+la var soil_qty_rev2 "1=Good 2= fair 3=poor "
+tab soil_qty_rev2, missing
 save "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", replace
 
-***************************trying
- ********************************************************************************
-* PLOT AREAS *
-********************************************************************************
-use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
-	gen season = 0 
-append using "${mwi_GHS_W4_raw_data}\ag_mod_j_19.dta" // HS 2.3.23: DRY SEASON crop data; more GARDEN and PLOT info
-	replace season = 1 if season ==. 
-append using "${mwi_GHS_W4_raw_data}\ag_mod_o2_19.dta" // HS 2.3.23:  PERMANENT CROPS
-	replace season = 2 if season == .
-
-* Counting acreage
-gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
-replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_j05a if ag_j05b==1										//Replace with dry season measures if rainy season is not available
-replace area_acres_est = (ag_j05a*2.47105) if ag_j05b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_j05a*0.000247105) if ag_j05b == 3 & area_acres_est ==.	//Self-report in square meters
-replace area_acres_est = ag_o04a if ag_o04b==1										//Permanent crops in acres
-replace area_acres_est = (ag_o04a*2.47105) if ag_o04b == 2 & area_acres_est ==.		//Permanent crops in hectares
-replace area_acres_est = (ag_o04a*0.000247105) if ag_o04b == 3 & area_acres_est ==. //Permanent crops in square meters
-
-* GPS MEASURE
-gen area_acres_meas = ag_c04c														//GPS measure - rainy
-replace area_acres_meas = ag_j05c if area_acres_meas==. 							//GPS measure - replace with dry if no rainy season measure
-replace area_acres_meas = ag_o04c if area_acres_meas == . 							//GPS measure - permanent crops
-keep if area_acres_est !=. | area_acres_meas !=. 									//Keep if acreage or GPS measure info is available
-
-lab var season "season: 0=rainy, 1=dry, 2=tree crop"
-	label define season 0 "rainy" 1 "dry" 2 "tree or permanent crop"
-	label values season season 
-
-gen field_size= (area_acres_est* (1/2.47105))
-replace field_size = (area_acres_meas* (1/2.47105))  if field_size==. & area_acres_meas!=. 
-
-ren y4_hhid HHID
-keep HHID plotid field_size qx_type interview_status gardenid plotid
-
-egen any = rowmiss(plotid)
-
-drop if any==1
-sort HHID
-save "${mwi_GHS_W4_created_data}\field_size.dta", replace
 
 
 
 
- ********************************************************************************
-* PLOT AREAS *
-********************************************************************************
-use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
-	gen season = 0 
-
-
-* Counting acreage
-gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
-replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-
-* GPS MEASURE
-gen area_acres_meas = ag_c04c														//GPS measure - rainy
-
-
-gen field_size= (area_acres_meas* (1/2.47105))
-replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
-tab field_size, missing
-
-egen mid_size = median(field_size)
-replace field_size=mid_size if field_size==.
-tab field_size, missing
-ren y4_hhid HHID
-collapse (sum) field_size, by (HHID)
-sort HHID
-ren field_size land_holding 
-label var land_holding  "land holding in hectares"
-save "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
-
-
-
-
-
- ********************************************************************************
-* PLOT AREAS *
-********************************************************************************
-use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
-	gen season = 0 
-
-
-* Counting acreage
-gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
-replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
-replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
-
-* GPS MEASURE
-gen area_acres_meas = ag_c04c														//GPS measure - rainy
-
-
-gen field_size= (area_acres_meas* (1/2.47105))
-replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
-tab field_size, missing
-
-egen mid_size = median(field_size)
-replace field_size=mid_size if field_size==.
-tab field_size, missing
-ren y4_hhid HHID
-
-keep HHID plotid field_size qx_type interview_status gardenid plotid
-
-egen any = rowmiss(plotid)
-
-drop if any==1
-sort HHID
-save "${mwi_GHS_W4_created_data}\field_size.dta", replace
-
-
-
-*******************************
-*Soil Quality
-*******************************
-
-use "${mwi_GHS_W4_raw_data}\ag_mod_d_19.dta" , clear
-ren y4_hhid HHID
-
-egen any = rowmiss(plotid)
-
-drop if any==1
-
-
-
-merge m:1 HHID plotid using "${mwi_GHS_W4_created_data}\field_size.dta"
 
 
 

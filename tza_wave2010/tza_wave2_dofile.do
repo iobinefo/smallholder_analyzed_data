@@ -753,12 +753,10 @@ save "${tza_GHS_W2_created_data}\food_2010.dta", replace
 
 
 
-****************************
-*HH_ids
-****************************
-
 use "${tza_GHS_W2_raw_data }\HH_SEC_A.dta" ,clear 
 ren y2_hhid HHID
+
+//Just 580 matched
 merge m:1 region district ward ea using "${tza_GHS_W2_created_data}\food_2010.dta",keepusing(maize_price_mr rice_price_mr)
 
 
@@ -836,7 +834,7 @@ la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
 
 sort HHID
-save "${tza_GHS_W2_created_data}\net_buyer_2010.dta", replace
+save "${tza_GHS_W2_created_data}\net_buyer_seller_2010.dta", replace
 
 
 
@@ -1063,7 +1061,7 @@ merge 1:1 HHID using "${tza_GHS_W2_created_data}\safety_net_2010.dta", gen (safe
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W2_created_data}\food_prices_2010.dta", gen (foodprices)
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\net_buyer_2010.dta", gen (net)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\net_buyer_seller_2010.dta", gen (net)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W2_created_data}\soil_quality_2010.dta", gen (soil)
 sort HHID
