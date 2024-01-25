@@ -913,37 +913,36 @@ save "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", replace
 use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
 	gen season = 0 
 merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\hhids.dta"
+drop if _merge==2
 * Counting acreage
-gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
+
+
+******convert to acres
+
+gen area_acres_est = ag_c04a if ag_c04b == 1 	//Self-report in acres - rainy season 
+									
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
-*replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
+replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
 
 
-gen field_size= (area_acres_meas* (1/2.47105))
-replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
 
-egen median_ea_id = median(field_size), by (ea_id)
-egen median_district  = median(field_size), by (district )
-egen median_region  = median(field_size), by (region )
+gen field_size = area_acres_meas
 
+tab field_size, missing
+tab area_acres_est,missing
+replace field_size = area_acres_est  if field_size==.  
+tab field_size, missing
 
-
-replace field_size = median_ea_id if field_size ==.
-tab field_size,missing
-
-replace field_size = median_district if field_size ==. 
-tab field_size ,missing
-
-replace field_size = median_region if field_size ==.
-tab field_size,missing
+sum field_size, detail
+replace field_size = 0.52 if field_size==.
+tab field_size, missing
 
 
-
-
-
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
 
 ren y4_hhid HHID
 collapse (sum) field_size, by (HHID)
@@ -959,42 +958,48 @@ save "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
 use "${mwi_GHS_W4_raw_data}\ag_mod_c_19.dta",clear  // HS 2.3.23: RAINY SEASON crop data; data about PLOT ID, Garden ID (how many plots per HH? How many gardens and how many plots in that garden?) GPS conditions, area reporting info, etc.
 	gen season = 0 
 merge m:1 y4_hhid using  "${mwi_GHS_W4_created_data}\hhids.dta"
+drop if _merge==2
+drop _merge
 * Counting acreage
-gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
+
+
+******convert to acres
+
+gen area_acres_est = ag_c04a if ag_c04b == 1 	//Self-report in acres - rainy season 
+									
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
-*replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
+replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est ==.	//Self-report in square meters
 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
 
 
-gen field_size= (area_acres_meas* (1/2.47105))
-replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
 
-egen median_ea_id = median(field_size), by (ea_id)
-egen median_district  = median(field_size), by (district )
-egen median_region  = median(field_size), by (region )
+gen field_size = area_acres_meas
+
+tab field_size, missing
+tab area_acres_est,missing
+replace field_size = area_acres_est  if field_size==.  
+tab field_size, missing
+
+sum field_size, detail
+replace field_size = 0.52 if field_size==.
+tab field_size, missing
 
 
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
 
-replace field_size = median_ea_id if field_size ==.
-tab field_size,missing
 
-replace field_size = median_district if field_size ==. 
-tab field_size ,missing
-
-replace field_size = median_region if field_size ==.
-tab field_size,missing
 
 ren y4_hhid HHID
 ren plotid plot_id
-keep HHID plot_id field_size region district ea_id
 
-egen any = rowmiss(plot_id)
 
-drop if any==1
-duplicates report plot_id
-duplicates drop plot_id, force
+*egen any = rowmiss(plot_id)
+
+*drop if any==1
+
 sort HHID
 save "${mwi_GHS_W4_created_data}\field_size.dta", replace
 
@@ -1008,13 +1013,13 @@ use "${mwi_GHS_W4_raw_data}\ag_mod_d_19.dta" , clear
 ren plotid plot_id
 
 ren y4_hhid HHID
-egen any = rowmiss(plot_id)
+*egen any = rowmiss(plot_id)
 
-drop if any==1
+*drop if any==1
 
 
 ********************only 13 observations merged
-merge m:1 HHID plot_id using "${mwi_GHS_W4_created_data}\field_size.dta"
+merge m:1 HHID gardenid plot_id using "${mwi_GHS_W4_created_data}\field_size.dta"
 
 
 ren ag_d22 soil_quality
