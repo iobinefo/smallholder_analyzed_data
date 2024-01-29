@@ -39,21 +39,6 @@ la var plot_wetness "Potential wetness index of plot"
 save "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", replace
 
 
-***********************************
-*Food Prices from Community
-*********************************
-use "${Nigeria_GHS_W4_raw_data}\sectc2_plantingw4.dta", clear
-*rice is 13, maize is 16
-
-*br if item_cd == 20
-*br if item_cd ==20 & c2q2==1
-tab c2q3 if item_cd ==16 & c2q2==1
-tab c2q2 if item_cd==16
-tab c2q3 if item_cd ==16
-tab c2q3 if item_cd ==13
-*label var maize_price_mr "commercial price of maize in naira"
-*label var rice_price_mr "commercial price of rice in naira"
-
 
 
 
@@ -610,10 +595,187 @@ save "${Nigeria_GHS_W4_created_data}\safety_net_2018.dta", replace
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+***********************************
+*Food Prices from Community
+*********************************
+use "${Nigeria_GHS_W4_raw_data}\sectc2_plantingw4.dta", clear
+*rice is 13, maize is 16
+
+*br if item_cd == 20
+*br if item_cd ==20 & c2q2==1
+tab c2q3 if item_cd ==20 & c2q2==1
+tab c2q2 if item_cd==20
+tab c2q3 if item_cd ==20
+tab c2q3 if item_cd ==13
+
+
+
+
+
+gen conversion =1
+tab conversion, missing
+gen food_size=1 //This makes it easy for me to copy-paste existing code rather than having to write a new block
+replace conversion = food_size*2.696 if c2q2 == 11
+replace conversion = food_size*0.001 if  c2q2 == 2
+replace conversion = food_size*0.175 if  c2q2 == 12		
+replace conversion = food_size*0.23 if  c2q2 == 13
+replace conversion = food_size*1.5 if  c2q2 == 20 |c2q2 == 21  |c2q2 == 30  |c2q2 == 31 	
+replace conversion = food_size*0.35 if  c2q2 == 40 
+replace conversion = food_size*0.70 if  c2q2 == 41
+replace conversion = food_size*3.00 if  c2q2 == 51  |c2q2 == 52 
+replace conversion = food_size*0.718 if  c2q2 == 70	 |c2q2 == 71  |c2q2 == 72
+replace conversion = food_size*1.615 if  c2q2 == 80  |c2q2 == 81  |c2q2 == 82
+replace conversion = food_size*1.135 if   c2q2 == 90  |c2q2 == 91  |c2q2 == 92
+				
+tab conversion, missing	
+
+
+
+gen maize_price= c2q3* conversion if item_cd==20
+tab maize_price
+
+sum maize_price, detail
+
+
+tab maize_price,missing
+sum maize_price,detail
+tab maize_price
+
+replace maize_price = 500 if maize_price >500 & maize_price<.  //bottom 5%
+replace maize_price = 50 if maize_price< 50       ////top 5%
+
+
+
+egen median_pr_ea = median(maize_price), by (ea)
+egen median_pr_lga = median(maize_price), by (lga)
+egen median_pr_state = median(maize_price), by (state)
+egen median_pr_zone = median(maize_price), by (zone)
+
+egen num_pr_ea = count(maize_price), by (ea)
+egen num_pr_lga = count(maize_price), by (lga)
+egen num_pr_state = count(maize_price), by (state)
+egen num_pr_zone = count(maize_price), by (zone)
+
+tab num_pr_ea
+tab num_pr_lga
+tab num_pr_state
+tab num_pr_zone
+
+
+gen maize_price_mr = maize_price
+
+replace maize_price_mr = median_pr_ea if maize_price_mr==. & num_pr_ea>=2
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_lga if maize_price_mr==. & num_pr_lga>=2
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_state if maize_price_mr==. & num_pr_state>=2
+tab maize_price_mr,missing
+
+replace maize_price_mr = median_pr_zone if maize_price_mr==. & num_pr_zone>=2
+tab maize_price_mr,missing
+
+
+
+
+
+
+****************rice
+
+gen rice_price = c2q3* conversion if item_cd==13
+
+sum rice_price,detail
+tab rice_price
+
+replace rice_price = 1500 if rice_price >1500 & rice_price<.   //bottom 5%
+replace rice_price = 10 if rice_price< 10  //top 5%
+tab rice_price,missing
+
+
+
+egen median_rice_ea = median(rice_price), by (ea)
+egen median_rice_lga = median(rice_price), by (lga)
+egen median_rice_state = median(rice_price), by (state)
+egen median_rice_zone = median(rice_price), by (zone)
+
+egen num_rice_ea = count(rice_price), by (ea)
+egen num_rice_lga = count(rice_price), by (lga)
+egen num_rice_state = count(rice_price), by (state)
+egen num_rice_zone = count(rice_price), by (zone)
+
+tab num_rice_ea
+tab num_rice_lga
+tab num_rice_state
+tab num_rice_zone
+
+
+gen rice_price_mr = rice_price
+
+replace rice_price_mr = median_rice_ea if rice_price_mr==. & num_rice_ea>=7
+tab rice_price_mr,missing
+
+replace rice_price_mr = median_rice_lga if rice_price_mr==. & num_rice_lga>=7
+tab rice_price_mr,missing
+
+replace rice_price_mr = median_rice_state if rice_price_mr==. & num_rice_state>=7
+tab rice_price_mr,missing
+
+replace rice_price_mr = median_rice_zone if rice_price_mr==. & num_rice_zone>=7
+tab rice_price_mr,missing
+
+
+sort zone state ea
+collapse (max) maize_price_mr rice_price_mr  median_pr_lga median_pr_state median_pr_zone median_pr_ea , by (zone state lga sector ea)
+
+
+save "${Nigeria_GHS_W4_created_data}\food_prices.dta", replace
+
+
+
+
 **************
 *Net Buyers and Sellers
 ***************
 use "${Nigeria_GHS_W4_raw_data}\sect7b_plantingw4.dta", clear
+merge m:1 zone state lga sector ea using "${Nigeria_GHS_W4_created_data}\food_prices.dta", keepusing (median_pr_ea median_pr_lga median_pr_state median_pr_zone maize_price_mr rice_price_mr)
+
+
+
+
+
+
+
+
+**************
+*maize price
+*************
+//missing values persists even after i did this
+replace maize_price_mr = median_pr_ea if maize_price_mr==.
+tab maize_price_mr, missing
+
+replace maize_price_mr = median_pr_lga if maize_price_mr==.
+tab maize_price_mr, missing
+
+replace maize_price_mr = median_pr_state if maize_price_mr==.
+tab maize_price_mr, missing
+
+replace maize_price_mr = median_pr_zone if maize_price_mr==.
+tab maize_price_mr, missing
+
+
+tab rice_price_mr, missing
 
 *s7bq5a from purchases
 *s7bq6a from own production
@@ -637,7 +799,9 @@ replace net_buyer=0 if net_buyer==.
 tab net_buyer,missing
 
 
-collapse  (max) net_seller net_buyer, by(hhid)
+collapse  (max) maize_price_mr rice_price_mr net_seller net_buyer, by(hhid)
+label var maize_price_mr "commercial price of maize in naira"
+label var rice_price_mr "commercial price of rice in naira"
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
 sort hhid

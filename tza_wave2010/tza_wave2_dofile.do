@@ -921,23 +921,30 @@ gen area_acres_est = ag2a_04
 replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
 replace area_acres_meas = ag2b_20 if area_acres_meas==.
-*keep if area_acres_est !=.
-*keep y2_hhid plot_id area_acres_est area_acres_meas
+
+gen field_size = area_acres_meas
+
+tab field_size, missing
+tab area_acres_est,missing
+replace field_size = area_acres_est  if field_size==.  
+tab field_size, missing
+
+sum field_size, detail
+*replace field_size = 0.52 if field_size==.
+*tab field_size, missing
 
 
-lab var area_acres_meas "Plot are in acres (GPSd)"
-lab var area_acres_est "Plot area in acres (estimated)"
-gen area_est_hectares=area_acres_est* (1/2.47105)  
-gen area_meas_hectares= area_acres_meas* (1/2.47105)
+**************Top 95% is 4 hectares
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
+
+
 
 
 ren y2_hhid HHID
-collapse (sum) area_est_hectares area_meas_hectares , by (HHID)
+collapse (sum)  field_size_ha , by (HHID)
 sort HHID
-ren area_est_hectares land_holding_est 
-ren area_meas_hectares land_holding_meas 
-label var land_holding_est "land holding estimated in hectares"
-label var land_holding_meas "land holding measured using gps in hectares"
+label var field_size_ha "land holding measured using gps in hectares"
 save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 
 
@@ -951,27 +958,33 @@ save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 *******************************
 use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
 append using "${tza_GHS_W2_raw_data}\AG_SEC2B.dta", gen(short)
+ren plotnum plot_id
 gen area_acres_est = ag2a_04
 replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
 replace area_acres_meas = ag2b_20 if area_acres_meas==.
-*keep if area_acres_est !=.
-*keep y2_hhid plot_id area_acres_est area_acres_meas
+
+gen field = area_acres_meas
+
+tab field, missing
+tab area_acres_est,missing
+replace field = area_acres_est  if field==.  
+tab field, missing
+
+sum field, detail
+*replace field = 0.52 if field_size==.
+*tab field, missing
 
 
-lab var area_acres_meas "Plot are in acres (GPSd)"
-lab var area_acres_est "Plot area in acres (estimated)"
-gen area_est_hectares=area_acres_est* (1/2.47105)  
-gen area_meas_hectares= area_acres_meas* (1/2.47105)
-
-keep y2_hhid plotnum area_est_hectares area_meas_hectares
+**************Top 95% is 4 hectares
+gen field_size = field* (1/2.47105)
+tab field_size, missing
+ren plot_id plotnum
+keep y2_hhid plotnum field_size
 
 merge 1:1 y2_hhid plotnum using "${tza_GHS_W2_raw_data}\AG_SEC3A.dta"
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
 
-
-gen field_size= area_meas_hectares
-tab field_size, missing
 
 
 ren y2_hhid HHID
@@ -1004,6 +1017,7 @@ tab soil_qty_rev2, missing
 
 
 
+/* should i give them the median?
 
 egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
 egen median_ward  = median(soil_qty_rev2), by (region district ward )
@@ -1016,18 +1030,15 @@ tab soil_qty_rev2,missing
 replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
 tab soil_qty_rev2,missing
 replace soil_qty_rev2 = median_region if soil_qty_rev2==.
-tab soil_qty_rev2,missing
+tab soil_qty_rev2,missing*/
 
 
 
-replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
-replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
-tab soil_qty_rev2,missing
 
 
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
-la value soil soil_qty_rev2
+la values soil soil_qty_rev2
 la var soil_qty_rev2 "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
 

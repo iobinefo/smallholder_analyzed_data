@@ -945,9 +945,9 @@ gen field_size_ha = field_size* (1/2.47105)
 tab field_size_ha, missing
 
 ren y4_hhid HHID
-collapse (sum) field_size, by (HHID)
+collapse (sum) field_size_ha, by (HHID)
 sort HHID
-ren field_size land_holding 
+ren field_size_ha land_holding 
 label var land_holding  "land holding in hectares"
 save "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
 
@@ -1026,34 +1026,36 @@ ren ag_d22 soil_quality
 
 
 *how to get them my max fieldsize
-egen max_fieldsize = max(field_size), by (HHID)
+egen max_fieldsize = max(field_size_ha), by (HHID)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
-order field_size soil_quality HHID max_fieldsize
+order field_size_ha soil_quality HHID max_fieldsize
 sort HHID
-keep if field_size== max_fieldsize
-sort HHID plot_id field_size
+keep if field_size_ha== max_fieldsize
+sort HHID plot_id field_size_ha
 
 duplicates report HHID
 
 duplicates tag HHID, generate(dup)
 tab dup
-list field_size soil_quality dup
+list field_size_ha soil_quality dup
 
 
-list HHID plot_id  field_size soil_quality dup if dup>0
+list HHID plot_id  field_size_ha soil_quality dup if dup>0
 
 egen soil_qty_rev = min(soil_quality) 
 gen soil_qty_rev2 = soil_quality
 
 replace soil_qty_rev2 = soil_qty_rev if dup>0
 
-list HHID plot_id  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+list HHID plot_id  field_size_ha soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+tab soil_qty_rev2, missing
 
+replace soil_qty_rev2= 2 if soil_qty_rev2==.
 
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 
-la value soil soil_qty_rev2
+la values soil soil_qty_rev2
 la var soil_qty_rev2 "1=Good 2= fair 3=poor "
 tab soil_qty_rev2, missing
 save "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", replace

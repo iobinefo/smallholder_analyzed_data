@@ -834,7 +834,7 @@ clear
 
 
 use "${mwi_GHS_W1_raw_data}\ag_mod_c_10.dta", clear
-merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta", gen (household)
 gen season=0 //rainy
 
 ren ag_c00 plot_id
@@ -847,69 +847,44 @@ replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
 
-gen field_size= (area_acres_meas* (1/2.47105))
-*replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+gen field_size= area_acres_meas
+tab field_size, missing
+tab area_acres_est, missing
+
+replace field_size = area_acres_est if field_size==.
+tab field_size, missing
+
+sum field_size, detail
+replace field_size = 0.75 if field_size==.
 tab field_size, missing
 
 
-egen median_ea_id = median(field_size), by (ea_id)
-egen median_district  = median(field_size), by (district )
-egen median_region  = median(field_size), by (region )
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
 
-
-
-replace field_size = median_ea_id if field_size ==.
-tab field_size,missing
-
-replace field_size = median_district if field_size ==. 
-tab field_size ,missing
-
-replace field_size = median_region if field_size ==.
-tab field_size,missing
-
-
-
-
-
-
-
-
-
-
-
-
+replace field_size = 5 if field_size>5 //removal of outliers
+tab field_size, missing
 
 
 
 
 
 ren HHID HHID
-collapse (sum) field_size, by (HHID)
+collapse (sum) field_size_ha, by (HHID)
 sort HHID
-ren field_size land_holding 
+ren field_size_ha land_holding 
 label var land_holding "land holding in hectares"
 save "${mwi_GHS_W1_created_data}\land_holding_2010.dta", replace
 
-*keep if area_acres_est !=. | area_acres_meas !=. //13,491 obs deleted - Keep if acreage or GPS measure info is available
-*keep case_id plot_id season area_acres_est area_acres_meas field_size 			
-*gen gps_meas = area_acres_meas!=. 
-*lab var gps_meas "Plot was measured with GPS, 1=Yes"
-
-*lab var area_acres_meas "Plot are in acres (GPSd)"
-*lab var area_acres_est "Plot area in acres (estimated)"
-*gen area_est_hectares= area_acres_est* (1/2.47105)  
-*gen area_meas_hectares= area_acres_meas* (1/2.47105)
-*lab var area_meas_hectares "Plot are in hectares (GPSd)"
-*lab var area_est_hectares "Plot area in hectares (estimated)"
- 
 
 
  ********************************************************************************
 * Soil Quality *
 ********************************************************************************
 
+
 use "${mwi_GHS_W1_raw_data}\ag_mod_c_10.dta", clear
-merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta"
+merge m:1 case_id using  "${mwi_GHS_W1_created_data}\hhids.dta", gen (household)
 gen season=0 //rainy
 
 ren ag_c00 plot_id
@@ -922,28 +897,29 @@ replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
 
-gen field_size= (area_acres_meas* (1/2.47105))
-*replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_meas!=. 
+gen field_size= area_acres_meas
+tab field_size, missing
+tab area_acres_est, missing
+
+replace field_size = area_acres_est if field_size==.
+tab field_size, missing
+
+sum field_size, detail
+replace field_size = 0.75 if field_size==.
 tab field_size, missing
 
 
-egen median_ea_id = median(field_size), by (ea_id)
-egen median_district  = median(field_size), by (district )
-egen median_region  = median(field_size), by (region )
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
+
+replace field_size = 5 if field_size>5 //removal of outliers
+tab field_size, missing
 
 
 
-replace field_size = median_ea_id if field_size ==.
-tab field_size,missing
-
-replace field_size = median_district if field_size ==. 
-tab field_size ,missing
-
-replace field_size = median_region if field_size ==.
-tab field_size,missing
 
 ren HHID HHID
-keep HHID plot_id field_size case_id ea_id
+keep HHID plot_id field_size_ha case_id ea_id
 egen any = rowmiss(plot_id)
 
 drop if any==1
@@ -966,39 +942,40 @@ merge m:1 HHID plot_id using "${mwi_GHS_W1_created_data}\field_size.dta"
 
 ren ag_d22 soil_quality
 
-order HHID plot_id field_size soil_quality
+order HHID plot_id field_size_ha soil_quality
 
 
 
 *how to get them my max fieldsize
-egen max_fieldsize = max(field_size), by (HHID)
+egen max_fieldsize = max(field_size_ha), by (HHID)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
-order field_size soil_quality HHID max_fieldsize
+order field_size_ha soil_quality HHID max_fieldsize
 sort HHID
-keep if field_size== max_fieldsize
-sort HHID plot_id field_size
+keep if field_size_ha== max_fieldsize
+sort HHID plot_id field_size_ha
 
 duplicates report HHID
 
 duplicates tag HHID, generate(dup)
 tab dup
-list field_size soil_quality dup
+list field_size_ha soil_quality dup
 
 
-list HHID plot_id  field_size soil_quality dup if dup>0
+list HHID plot_id  field_size_ha soil_quality dup if dup>0
 
 egen soil_qty_rev = min(soil_quality) 
 gen soil_qty_rev2 = soil_quality
 
 replace soil_qty_rev2 = soil_qty_rev if dup>0
 
-list HHID plot_id  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
-
+list HHID plot_id  field_size_ha soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+tab soil_qty_rev2, missing
 
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 
 la value soil soil_qty_rev2
+ 
 save "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", replace 
 
 

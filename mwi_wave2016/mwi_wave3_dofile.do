@@ -914,7 +914,6 @@ use "${mwi_GHS_W3_raw_data}\ag_mod_c_16.dta",clear
 merge m:1 y3_hhid using  "${mwi_GHS_W3_created_data}\hhids.dta", gen (household)
 gen season=0 //rainy
 ren plotid plot_id
-
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
@@ -924,43 +923,25 @@ replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
 
-gen field_size= (area_acres_meas* (1/2.47105))
+gen field_size= area_acres_meas
+tab field_size, missing
+tab area_acres_est, missing
+replace field_size = area_acres_est  if field_size==.
 tab field_size, missing
 
-egen median_ea_id = median(field_size), by (ea_id)
-egen median_district  = median(field_size), by (district )
-egen median_region  = median(field_size), by (region )
+sum field_size, detail
+replace field_size = 0.66 if field_size==.
+tab field_size, missing
 
 
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
 
-egen num_ea_id = count(field_size), by (ea_id)
-egen num_district  = count(field_size), by (district )
-egen num_region  = count(field_size), by (region )
-
-
-
-
-tab num_ea_id
-tab num_district
-tab num_region
-
-
-
-replace field_size = median_ea_id if field_size ==.
-tab field_size,missing
-
-replace field_size = median_district if field_size ==. 
-tab field_size ,missing
-
-replace field_size = median_region if field_size ==.
-tab field_size,missing
-
-*replace field_size = (area_acres_est* (1/2.47105))  if field_size==. & area_acres_est!=. 
 
 ren y3_hhid HHID
-collapse (sum) field_size, by (HHID)
+collapse (sum) field_size_ha, by (HHID)
 sort HHID
-ren field_size land_holding 
+ren field_size_ha land_holding 
 label var land_holding  "land holding in hectares"
 save "${mwi_GHS_W3_created_data}\land_holding_2016.dta", replace
 
@@ -972,11 +953,13 @@ save "${mwi_GHS_W3_created_data}\land_holding_2016.dta", replace
 *Soil Quality
 *******************************
 
+********************************************************************************
+
+
 use "${mwi_GHS_W3_raw_data}\ag_mod_c_16.dta",clear 
 merge m:1 y3_hhid using  "${mwi_GHS_W3_created_data}\hhids.dta", gen (household)
 gen season=0 //rainy
 ren plotid plot_id
-
 * Counting acreage
 gen area_acres_est = ag_c04a if ag_c04b == 1 										//Self-report in acres - rainy season 
 replace area_acres_est = (ag_c04a*2.47105) if ag_c04b == 2 & area_acres_est ==.		//Self-report in hectares
@@ -986,44 +969,29 @@ replace area_acres_est = (ag_c04a*0.000247105) if ag_c04b == 3 & area_acres_est 
 * GPS MEASURE
 gen area_acres_meas = ag_c04c														//GPS measure - rainy
 
-gen field_size= (area_acres_meas* (1/2.47105))
+gen field_size= area_acres_meas
+tab field_size, missing
+tab area_acres_est, missing
+replace field_size = area_acres_est  if field_size==.
 tab field_size, missing
 
-egen median_ea_id = median(field_size), by (ea_id)
-egen median_district  = median(field_size), by (district )
-egen median_region  = median(field_size), by (region )
+sum field_size, detail
+replace field_size = 0.66 if field_size==.
+tab field_size, missing
+
+
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
 
 
 
-egen num_ea_id = count(field_size), by (ea_id)
-egen num_district  = count(field_size), by (district )
-egen num_region  = count(field_size), by (region )
 
 
-
-
-tab num_ea_id
-tab num_district
-tab num_region
-
-
-
-replace field_size = median_ea_id if field_size ==.
-tab field_size,missing
-
-replace field_size = median_district if field_size ==. 
-tab field_size ,missing
-
-replace field_size = median_region if field_size ==.
-tab field_size,missing
 ren y3_hhid HHID
-keep HHID plot_id field_size region district ea_id
+*egen any = rowmiss(plot_id)
 
-egen any = rowmiss(plot_id)
+*drop if any==1
 
-drop if any==1
-duplicates report plot_id
-duplicates drop plot_id, force
 sort HHID
 save "${mwi_GHS_W3_created_data}\field_size.dta", replace
 
@@ -1039,49 +1007,42 @@ ren plotid plot_id
 ren y3_hhid HHID
 
 
-egen any = rowmiss(plot_id)
-
-drop if any==1
-*duplicates report plot_id
-*duplicates drop plot_id, force
-
-
-********************Only 14 data matched after dropping duplicates
-
-merge m:1 HHID plot_id using "${mwi_GHS_W3_created_data}\field_size.dta"
+merge m:1 HHID gardenid plot_id using "${mwi_GHS_W3_created_data}\field_size.dta"
 
 ren ag_d22 soil_quality
 
 
 *how to get them my max fieldsize
-egen max_fieldsize = max(field_size), by (HHID)
+egen max_fieldsize = max(field_size_ha), by (HHID)
 replace max_fieldsize= . if max_fieldsize!= max_fieldsize
-order field_size soil_quality HHID max_fieldsize
+order field_size_ha soil_quality HHID max_fieldsize
 sort HHID
-keep if field_size== max_fieldsize
+keep if field_size_ha== max_fieldsize
 sort HHID plot_id field_size
 
 duplicates report HHID
 
 duplicates tag HHID, generate(dup)
 tab dup
-list field_size soil_quality dup
+list field_size_ha soil_quality dup
 
 
-list HHID plot_id  field_size soil_quality dup if dup>0
+list HHID plot_id  field_size_ha soil_quality dup if dup>0
 
 egen soil_qty_rev = min(soil_quality) 
 gen soil_qty_rev2 = soil_quality
 
 replace soil_qty_rev2 = soil_qty_rev if dup>0
 
-list HHID plot_id  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+list HHID plot_id  field_size_ha soil_quality soil_qty_rev soil_qty_rev2 dup if dup>0
+tab soil_qty_rev2, missing
 
 
+**************should we give missing values the median?
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 
-la value soil soil_qty_rev2
+la values soil soil_qty_rev2
 la var soil_qty_rev2 "1=Good 2= fair 3=poor "
 save "${mwi_GHS_W3_created_data}\soil_quality_2016.dta", replace
 
