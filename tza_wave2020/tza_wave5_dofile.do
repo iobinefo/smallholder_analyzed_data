@@ -1004,6 +1004,110 @@ save "${tza_GHS_W5_created_data}\soil_quality_2020.dta", replace
 
 
 
+*******************************
+*Plot Slope
+*******************************
+use "${tza_GHS_W5_raw_data}\ag_sec_02.dta",clear
+
+
+gen area_acres_est = ag2a_04
+gen area_acres_meas = ag2a_09
+
+
+gen field = area_acres_meas
+
+tab field, missing
+tab area_acres_est,missing
+replace field = area_acres_est  if field==.  
+tab field, missing
+
+sum field, detail
+replace field = 1.04 if field==.
+tab field, missing
+
+
+**************Top 95% is 3.4 hectares
+gen field_size = field* (1/2.47105)
+tab field_size, missing
+
+
+keep y5_hhid plot_id field_size
+ 
+ 
+ 
+merge 1:1 y5_hhid plot_id using "${tza_GHS_W5_raw_data}\ag_sec_3a.dta"
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
+
+
+ren y5_hhid HHID
+ren plot_id plotnum
+ren ag3a_17 slope
+tab slope, missing
+
+
+
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size slope HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID plotnum field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size slope dup
+
+
+list HHID plotnum  field_size slope dup if dup>0
+
+egen slope_min = min(slope) 
+gen plot_slope = slope
+
+replace plot_slope = slope_min if dup>0
+
+list HHID plotnum  field_size slope slope_min plot_slope dup if dup>0
+tab plot_slope, missing
+
+
+
+/*
+egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
+egen median_ward  = median(soil_qty_rev2), by (region district ward )
+egen median_district  = median(soil_qty_rev2), by (region district )
+egen median_region  = median(soil_qty_rev2), by (region )
+
+replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
+replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_region if soil_qty_rev2==.
+tab soil_qty_rev2,missing
+
+
+
+replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
+replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
+tab soil_qty_rev2,missing*/
+
+
+collapse (mean) plot_slope , by (HHID)
+/*label define slope 1 "flat bottom" 2 "flat top" 3 "slightly sloped" 4 "very steep "
+label values slope plot_slope*/
+la var plot_slope "1=flat bottom 2= flat top 3=slightly sloped 4=very steep"
+
+save "${tza_GHS_W5_created_data}\geodata_2020.dta", replace
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1038,6 +1142,8 @@ merge 1:1 HHID using "${tza_GHS_W5_created_data}\net_buyer_seller_2020.dta", gen
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\soil_quality_2020.dta", gen (soil)
 sort HHID
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\geodata_2020.dta", gen (geodata)
+sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", gen (hhasset)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\land_holding_2020.dta"
@@ -1063,7 +1169,7 @@ append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_dat
 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020\tanzania_wave5_completedata_2020.dta" 
 
-
+order year
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Tanzania_complete_data.dta", replace
 
 

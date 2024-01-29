@@ -1019,6 +1019,138 @@ save "${tza_GHS_W4_created_data}\soil_quality_2014.dta", replace
 
 
 
+
+
+
+*******************************
+*Plot Slope
+*******************************
+use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
+append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+
+gen area_acres_est = ag2a_04
+replace area_acres_est = ag2b_15 if area_acres_est==.
+gen area_acres_meas = ag2a_09
+replace area_acres_meas = ag2b_20 if area_acres_meas==.
+
+
+
+
+
+
+
+gen field = area_acres_meas
+
+tab field, missing
+tab area_acres_est,missing
+replace field = area_acres_est  if field==.  
+tab field, missing
+
+sum field, detail
+replace field = 1.1 if field==.
+tab field, missing
+
+
+**************Top 95% is 2.5 hectares
+gen field_size_ha = field* (1/2.47105)
+tab field_size_ha, missing
+keep y4_hhid plotnum plotname field_size
+
+
+
+egen any = rowmiss(plotnum)
+
+drop if any
+ 
+ 
+ 
+merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data}\ag_sec_3a.dta"
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta", gen(hhids)
+
+
+ren y4_hhid HHID
+
+ren ag3a_17 slope
+tab slope, missing
+
+
+
+
+egen max_fieldsize = max(field_size), by (HHID)
+replace max_fieldsize= . if max_fieldsize!= max_fieldsize
+order field_size slope HHID max_fieldsize
+sort HHID
+keep if field_size== max_fieldsize
+sort HHID plotnum field_size
+
+duplicates report HHID
+
+duplicates tag HHID, generate(dup)
+tab dup
+list field_size slope dup
+
+
+list HHID plotnum  field_size slope dup if dup>0
+
+egen slope_min = min(slope) 
+gen plot_slope = slope
+
+replace plot_slope = slope_min if dup>0
+
+list HHID plotnum  field_size slope slope_min plot_slope  dup if dup>0
+tab plot_slope, missing
+
+
+/*
+
+egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
+egen median_ward  = median(soil_qty_rev2), by (region district ward )
+egen median_district  = median(soil_qty_rev2), by (region district )
+egen median_region  = median(soil_qty_rev2), by (region )
+
+replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
+replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_region if soil_qty_rev2==.
+tab soil_qty_rev2,missing
+
+
+
+replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
+replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
+tab soil_qty_rev2,missing*/
+
+
+collapse (mean) plot_slope , by (HHID)
+/*label define slope 1 "flat bottom" 2 "flat top" 3 "slightly sloped" 4 "very steep "
+label values slope plot_slope_rev2*/
+la var plot_slope "1=flat bottom 2= flat top 3=slightly sloped 4=very steep"
+
+save "${tza_GHS_W4_created_data}\geodata_2014.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ************************* Merging Agricultural Datasets ********************
 
 use "${tza_GHS_W4_created_data}\commercial_fert_2014.dta", replace
@@ -1045,6 +1177,8 @@ sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\net_buyer_seller_2014.dta", gen (net)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\soil_quality_2014.dta", gen (soil)
+sort HHID
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\geodata_2014.dta", gen (geodata)
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W4_created_data}\hhasset_value_2014.dta", gen (hhasset)
 sort HHID
