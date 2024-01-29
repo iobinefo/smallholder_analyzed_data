@@ -1138,7 +1138,7 @@ append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_dat
 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019\Malawi_wave4_completedata_2019.dta"
 
-
+order year
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Malawi_complete_data.dta", replace
 
 

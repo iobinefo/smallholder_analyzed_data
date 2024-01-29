@@ -892,7 +892,9 @@ save "${Nigeria_GHS_W1_created_data}\land_cf.dta", replace
  
  
  
- *************** Plot Size **********************
+*********************
+*Plot Size 
+**********************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11a1_plantingw1.dta", clear
 *merging in planting section to get cultivated status
@@ -956,19 +958,6 @@ save "${Nigeria_GHS_W1_created_data}\land_holdings.dta", replace
 
  
 
-* FARM SIZE/LAND SIZE *
-********************************************************************************
-//some plot areas are missing in NG wave 1, replacing with area planted if plot size is missing
-*Starting with area planted
-*use "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\NGA_2010_GHSP-W1_v03_M_STATA (1)\Post Planting Wave 1\Agriculture\sect11f_plantingw1.dta", clear
-
-*ren plotid plot_id
-*Merging in gender of plot manager
-*merge m:1 plot_id hhid using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\land_holdings.dta", nogen keep(1 3)
-
-*gen ha_planted = s11fq1a*conversion
-*collapse (sum) ha_planted, by (hhid) 
-*save "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\planted_areas.dta", replace
 
 
 
@@ -1004,6 +993,8 @@ sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", gen (foodprices)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\geodata.dta", gen (geodata)
+sort hhid
+merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta", gen(soil)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\land_holdings.dta"
 gen year = 2010

@@ -796,29 +796,68 @@ use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect5a_plantingw2
 
 sort hhid item_cd
 
-collapse (sum) s5q1, by (hhid item_cd)
+collapse (sum) s5q1, by (zone state lga ea hhid item_cd)
 tab item_cd,missing
 save "${Nigeria_GHS_W2_created_data}\item_qty_2012.dta", replace
 
 
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect5b_plantingw2.dta",clear 
 sort hhid item_cd
-collapse (mean) s5q4, by (hhid item_cd)
+collapse (mean) s5q4, by (zone state lga ea hhid item_cd)
 tab item_cd
 save "${Nigeria_GHS_W2_created_data}\item_cost_2012.dta", replace
 
 *******************Merging assest***********************
 sort hhid item_cd
-merge 1:1 hhid item_cd using "${Nigeria_GHS_W2_created_data}\item_qty_2012.dta"
+merge 1:1 hhid item_cd using "${Nigeria_GHS_W2_created_data}\item_qty_2012.dta", keepusing (zone state lga ea s5q1)
 drop _merge
 gen hhasset_value = s5q4*s5q1
-replace hhasset_value = 1000000 if hhasset_value > 1000000 & hhasset_value <.
-replace hhasset_value = 200 if hhasset_value <200
-egen hhasset_median = median(hhasset_value)
-tab hhasset_median
+tab hhasset_value
+
+
+replace hhasset_value=. if hhasset_value==0
+
+
+replace hhasset_value = 1000000 if hhasset_value > 1000000 & hhasset_value <.  //bottom 2%
+replace hhasset_value = 100 if hhasset_value <100  //top 2%
+
+
+sum hhasset_value, detail
+
 tab hhasset_value,missing
-replace hhasset_value = hhasset_median if hhasset_value==.
-tab hhasset_value,missing
+
+egen median_hhasset_ea = median(hhasset), by (ea)
+egen median_hhasset_lga = median(hhasset), by (lga)
+egen median_hhasset_state = median(hhasset), by (state)
+egen median_hhasset_zone = median(hhasset), by (zone)
+
+egen num_hhasset_ea = count(hhasset), by (ea)
+egen num_hhasset_lga = count(hhasset), by (lga)
+egen num_hhasset_state = count(hhasset), by (state)
+egen num_hhasset_zone = count(hhasset), by (zone)
+
+tab num_hhasset_ea
+tab num_hhasset_lga
+tab num_hhasset_state
+tab num_hhasset_zone
+
+
+replace hhasset_value = median_hhasset_ea if hhasset_value==. & num_hhasset_ea>= 281
+tab hhasset_value, missing
+
+replace hhasset_value = median_hhasset_lga if hhasset_value==. & num_hhasset_lga>= 281
+tab hhasset_value, missing
+
+replace hhasset_value = median_hhasset_state if hhasset_value==. & num_hhasset_state>= 281
+tab hhasset_value, missing
+
+replace hhasset_value = median_hhasset_zone if hhasset_value==. & num_hhasset_zone>= 281
+tab hhasset_value, missing
+
+
+
+
+
 collapse (sum) hhasset_value, by (hhid)
 
 la var hhasset_value "total value of household asset"

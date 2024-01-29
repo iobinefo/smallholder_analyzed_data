@@ -1163,7 +1163,7 @@ append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_dat
 egen fert_distance = median( dist_cens_mrk), by (hhid)
 replace dist_cens_mrk = fert_distance if dist_cens_mrk==.
 
-
+order year
 
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Nigeria_complete_data.dta", replace
 
