@@ -1028,7 +1028,11 @@ sort HHID
 merge 1:1 HHID using "${mwi_GHS_W1_created_data}\hhasset_value_2010.dta",gen (assest)
 sort HHID
 
-merge 1:1 HHID using "${mwi_GHS_W1_created_data}\land_holding_2010.dta"
+merge 1:1 HHID using "${mwi_GHS_W1_created_data}\land_holding_2010.dta", gen (land)
+sort HHID
+
+merge 1:1 HHID using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files"
+
 
 gen year = 2010
 sort HHID

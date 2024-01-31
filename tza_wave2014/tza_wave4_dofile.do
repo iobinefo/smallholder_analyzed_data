@@ -913,7 +913,7 @@ save "${tza_GHS_W4_created_data}\land_holding_2014.dta", replace
 *Soil Quality
 *******************************
 use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
-append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+*append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
 
 gen area_acres_est = ag2a_04
 replace area_acres_est = ag2b_15 if area_acres_est==.
