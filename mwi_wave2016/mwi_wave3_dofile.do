@@ -114,6 +114,7 @@ tab subsidy_dummy,missing
 collapse (sum)subsidy_qty (max) subsidy_dummy, by (HHID)
 label var subsidy_qty "Quantity of Fertilizer Purchased with coupon in kg"
 label var subsidy_dummy "=1 if acquired any fertilizer using coupon"
+ren subsidy_qty_2016 subsidy_qty
 save "${mwi_GHS_W3_created_data}\subsidized_fert_2016.dta", replace
 
 
@@ -1160,5 +1161,5 @@ save "${mwi_GHS_W3_created_data}\Malawi_wave3_completedata_2016.dta", replace
 
 
 
-tabstat total_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty subsidy_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 

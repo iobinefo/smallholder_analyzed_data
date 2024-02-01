@@ -276,7 +276,7 @@ tab org_fert, missing
 replace org_fert =0 if org_fert==.
 tab org_fert,missing
 
-collapse (sum)subsidy_qty (max) org_fert subsidy_dummy, by (HHID)
+collapse (sum) subsidy_qty (max) org_fert subsidy_dummy, by (HHID)
 la var org_fert "1= if used organic fertilizer"
 label var subsidy_qty "Quantity of Fertilizer Purchased with voucher in kg"
 label var subsidy_dummy "=1 if acquired any fertilizer using voucher"
@@ -1190,5 +1190,5 @@ save "${tza_GHS_W4_created_data}\tanzania_wave4_completedata_2014.dta", replace
 
 
 
-tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
