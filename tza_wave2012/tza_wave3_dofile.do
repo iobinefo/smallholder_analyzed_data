@@ -517,7 +517,7 @@ tab tpricefert_cens_mrk,missing
 
 
 
-collapse (sum) dist_cens  total_qty  total_valuefert  (max) tpricefert_cens_mrk, by(HHID)
+collapse (sum) total_qty  total_valuefert  (max) dist_cens tpricefert_cens_mrk, by(HHID)
 la var dist_cens "Distance travelled from plot to market in km"
 label var total_qty  "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
@@ -742,7 +742,7 @@ tab pry_edu if hh_b05==1 , missing
 tab finish_pry if hh_b05==1 , missing 
 tab finish_sec if hh_b05==1 , missing
 
-collapse (sum) num_mem (max) hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
+collapse (sum) num_mem (max) weight hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
 la var num_mem "household size"
 la var femhead "=1 if head is female"
 la var hh_headage_mrk "age of household head in years"
@@ -1107,4 +1107,8 @@ merge 1:1 HHID using "${tza_GHS_W3_created_data}\land_holding_2012.dta"
 gen year = 2012
 sort HHID
 save "${tza_GHS_W3_created_data}\tanzania_wave3_completedata_2012.dta", replace
+
+
+
+tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 

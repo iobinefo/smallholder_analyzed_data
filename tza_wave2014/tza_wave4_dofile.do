@@ -478,7 +478,7 @@ tab tpricefert_cens_mrk,missing
 
 
 
-collapse (sum) dist_cens total_qty total_valuefert  (max) tpricefert_cens_mrk, by(HHID)
+collapse (sum)  total_qty total_valuefert  (max) dist_cens tpricefert_cens_mrk, by(HHID)
 la var dist_cens "Distance travelled from plot to market in km"
 label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
@@ -703,7 +703,7 @@ tab pry_edu if hh_b05==1 , missing
 tab finish_pry if hh_b05==1 , missing 
 tab finish_sec if hh_b05==1 , missing
 
-collapse (sum) num_mem  (max) hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
+collapse (sum) num_mem  (max) weight hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
 la var num_mem  "household size"
 la var femhead "=1 if head is female"
 la var hh_headage_mrk "age of household head in years"
@@ -913,7 +913,7 @@ save "${tza_GHS_W4_created_data}\land_holding_2014.dta", replace
 *Soil Quality
 *******************************
 use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
-*append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
 
 gen area_acres_est = ag2a_04
 replace area_acres_est = ag2b_15 if area_acres_est==.
@@ -1190,4 +1190,5 @@ save "${tza_GHS_W4_created_data}\tanzania_wave4_completedata_2014.dta", replace
 
 
 
+tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 

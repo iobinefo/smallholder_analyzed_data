@@ -172,13 +172,13 @@ replace region=3 if inrange(district, 301, 315)
 lab var region "1=North, 2=Central, 3=South"
 lab var rural "1=Household lives in a rural area"
 
-keep HHID case_id ea_id district region
+keep HHID case_id ea_id district region weight
 sort region district ea_id
 merge m:1 ea_id using "${mwi_GHS_W1_created_data}\maize_pr.dta"
 
 tab maize_price_mr, missing
 
-collapse (max) maize_price_mr, by (HHID)
+collapse (max) weight maize_price_mr, by (HHID)
 la var maize_price_mr "price of maize crop"
 save "${mwi_GHS_W1_created_data}\food_prices_2010.dta", replace
 
@@ -1037,4 +1037,18 @@ merge 1:1 HHID using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\anal
 gen year = 2010
 sort HHID
 save "${mwi_GHS_W1_created_data}\Malawi_wave1_completedata_2010.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+tabstat total_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 

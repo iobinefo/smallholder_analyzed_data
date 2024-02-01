@@ -194,10 +194,10 @@ gen rural = (reside==2)
 lab var rural "1=Household lives in a rural area"
 drop HHID
 ren y2_hhid HHID
-keep HHID case_id ea_id district region
+keep HHID case_id ea_id district region weight
 sort region district ea_id
 merge m:1 ea_id using "${mwi_GHS_W2_created_data}\maize_pr.dta"
-collapse (max) maize_price_mr, by (HHID)
+collapse (max) weight maize_price_mr, by (HHID)
 
 label var maize_price_mr  "commercial price of maize in naira"
 save "${mwi_GHS_W2_created_data}\food_prices_2013.dta", replace
@@ -653,7 +653,7 @@ ren y2_hhid HHID
 
 sort HHID PID 
  
-*gen num_mem_2013 = 1
+gen num_mem = 1
 
 
 ******** female head****
@@ -754,8 +754,8 @@ tab pry_edu  if hh_b04==1 , missing
 tab finish_pry if hh_b04==1 , missing 
 tab finish_sec if hh_b04==1 , missing
 
-collapse (sum) hhsize (max) hh_headage_mrk  femhead  attend_sch  pry_edu  finish_pry  finish_sec , by (HHID)
-la var hhsize "household size"
+collapse (sum) num_mem (max) hh_headage_mrk  femhead  attend_sch  pry_edu  finish_pry  finish_sec , by (HHID)
+la var num_mem "household size"
 la var femhead  "=1 if head is female"
 la var hh_headage_mrk  "age of household head in years"
 la var attend_sch  "=1 if respondent attended school"
@@ -1064,13 +1064,62 @@ save "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", replace
 
 
 
+use "${mwi_GHS_W2_created_data}\commercial_fert_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\commercial_fert_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\subsidized_fert_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\subsidized_fert_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\informal_savings.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\informal_savings.dta", replace
+
+use "${mwi_GHS_W2_created_data}\credit_access_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\credit_access_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\Extension_access_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\Extension_access_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\demographics_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\demographics_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\labor_age_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\labor_age_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\safety_net_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\safety_net_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\food_prices_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\food_prices_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\geodata_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\geodata_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\net_buyer_seller_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\net_buyer_seller_2013.dta", replace
+
+use "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", replace
 
 
+use "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta", replace
 
-
-
-
-
+use "${mwi_GHS_W2_created_data}\land_holding_2013.dta", replace
+ren HHID y2_hhid
+save "${mwi_GHS_W2_created_data}\land_holding_2013.dta", replace
 
 
 
@@ -1097,35 +1146,46 @@ use "${mwi_GHS_W2_created_data}\commercial_fert_2013.dta", replace
 *******All observations Merged*****
 
 
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\subsidized_fert_2013.dta", gen (subsidized)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\informal_savings.dta", gen (savings)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\credit_access_2013.dta", gen (credit)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\Extension_access_2013.dta",  gen (extension)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\demographics_2013.dta",  gen (demographics)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\labor_age_2013.dta",  gen (labor)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\safety_net_2013.dta",  gen (safety)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\food_prices_2013.dta", gen (foodprices)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\geodata_2013.dta", gen (geodata)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\net_buyer_seller_2013.dta", gen (net)
-sort HHID
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\subsidized_fert_2013.dta", gen (subsidized)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\informal_savings.dta", gen (savings)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\credit_access_2013.dta", gen (credit)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\Extension_access_2013.dta",  gen (extension)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\demographics_2013.dta",  gen (demographics)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\labor_age_2013.dta",  gen (labor)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\safety_net_2013.dta",  gen (safety)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\food_prices_2013.dta", gen (foodprices)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\geodata_2013.dta", gen (geodata)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\net_buyer_seller_2013.dta", gen (net)
+sort y2_hhid
 
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", gen (soil)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta",  gen (asset)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W2_created_data}\land_holding_2013.dta"
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\soil_quality_2013.dta", gen (soil)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\hhasset_value_2013.dta",  gen (asset)
+sort y2_hhid
+merge 1:1 y2_hhid using "${mwi_GHS_W2_created_data}\land_holding_2013.dta", gen (land)
+sort y2_hhid
+merge 1:1 y2_hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files"
+
+
 
 gen year= 2013
-sort HHID
+sort y2_hhid
 
 save "${mwi_GHS_W2_created_data}\Malawi_wave2_completedata_2013.dta", replace
+
+
+
+
+tabstat total_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+
+
 

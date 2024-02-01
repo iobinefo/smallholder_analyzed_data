@@ -18,6 +18,23 @@ global Nigeria_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder 
 
 
 
+
+
+********************************************************************************
+* WEIGHTS *
+********************************************************************************
+
+use "${Nigeria_GHS_W4_raw_data}/secta_plantingw4.dta" , clear
+gen rural = (sector==2)
+lab var rural "1= Rural"
+keep hhid zone state lga ea wt_wave4 rural
+ren wt_wave4 weight
+collapse (max) weight, by (hhid)
+save  "${Nigeria_GHS_W4_created_data}/weight.dta", replace
+
+
+
+
 ************************
 *Geodata Variables
 ************************
@@ -1119,6 +1136,9 @@ use "${Nigeria_GHS_W4_created_data}\purchased_fert_2018.dta", replace
 
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta", gen (subsidized)
 sort hhid
+
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\weight.dta", gen (wgt)
+sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\savings_2018.dta", gen (savings)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\credit_access_2018.dta", gen (credit)
@@ -1147,6 +1167,7 @@ save "${Nigeria_GHS_W4_created_data}\Nigeria_wave4_completedata_2018.dta", repla
 
 
 
+*tabstat total_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
 
@@ -1172,6 +1193,7 @@ save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\comple
 
 
 
+tabstat total_qty subsidy_qty mrk_dist dist_cens_mrk tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
 

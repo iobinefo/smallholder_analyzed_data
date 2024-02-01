@@ -4,7 +4,7 @@
 
 
 
-
+*tabstat C17_HOURS C17_MINUTES C18 C19a [aweight = wgt], statistics( min p50 mean sd max ) by(county) columns(statistics)
 
 
 
@@ -491,7 +491,7 @@ ren y4_hhid HHID
 
 sort HHID PID 
  
-*gen num_mem  = 1
+gen num_mem  = 1
 
 
 ******** female head****
@@ -589,8 +589,8 @@ tab pry_edu if hh_b04==1 , missing
 tab finish_pry if hh_b04==1 , missing 
 tab finish_sec if hh_b04==1 , missing
 
-collapse (sum) hhsize (max) hh_headage_mrk  femhead  attend_sch  pry_edu finish_pry finish_sec, by (HHID)
-la var hhsize "household size"
+collapse (sum) num_mem (max) weight hh_headage_mrk  femhead  attend_sch  pry_edu finish_pry finish_sec, by (HHID)
+la var num_mem "household size"
 la var femhead  "=1 if head is female"
 la var hh_headage_mrk  "age of household head in years"
 la var attend_sch "=1 if respondent attended school"
@@ -1068,6 +1068,61 @@ save "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", replace
 
 
 
+use "${mwi_GHS_W4_created_data}\commercial_fert_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\commercial_fert_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\subsidized_fert_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\subsidized_fert_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\informal_savings.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\informal_savings.dta", replace
+
+use "${mwi_GHS_W4_created_data}\credit_access_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\credit_access_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\Extension_access_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\Extension_access_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\demographics_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\demographics_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\labor_age_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\labor_age_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\safety_net_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\safety_net_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\food_prices_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\food_prices_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\geodata_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\geodata_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", replace
+
+use "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
+ren HHID y4_hhid
+save "${mwi_GHS_W4_created_data}\land_holding_2019.dta", replace
+
+
+
+
 
 
 
@@ -1098,49 +1153,53 @@ use "${mwi_GHS_W4_created_data}\commercial_fert_2019.dta", replace
 *******All observations Merged*****
 
 
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\subsidized_fert_2019.dta", gen (subsidized)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\informal_savings.dta", gen (savings)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\credit_access_2019.dta", gen (credit)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\Extension_access_2019.dta", gen (extension)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\demographics_2019.dta", gen (demographics)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\labor_age_2019.dta", gen (labor)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\safety_net_2019.dta", gen (safety)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\food_prices_2019.dta", gen (foodprices)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\geodata_2019.dta", gen (geodata)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", gen (soil)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", gen (asset)
-sort HHID
-merge 1:1 HHID using "${mwi_GHS_W4_created_data}\land_holding_2019.dta"
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\subsidized_fert_2019.dta", gen (subsidized)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\informal_savings.dta", gen (savings)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\credit_access_2019.dta", gen (credit)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\Extension_access_2019.dta", gen (extension)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\demographics_2019.dta", gen (demographics)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\labor_age_2019.dta", gen (labor)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\safety_net_2019.dta", gen (safety)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\food_prices_2019.dta", gen (foodprices)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\geodata_2019.dta", gen (geodata)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\soil_quality_2019.dta", gen (soil)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\hhasset_value_2019.dta", gen (asset)
+sort y4_hhid
+merge 1:1 y4_hhid using "${mwi_GHS_W4_created_data}\land_holding_2019.dta", gen (land)
+sort y4_hhid
+merge 1:1 y4_hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files"
+
+
 gen year = 2019
-sort HHID
+sort y4_hhid
 save "${mwi_GHS_W4_created_data}\Malawi_wave4_completedata_2019.dta", replace
 
 
+*tabstat total_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
 
 *****************Appending all Malawi Datasets*****************
-use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013\Malawi_wave2_completedata_2013.dta",clear  
+use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2010\Malawi_wave1_completedata_2010.dta", clear
 
-*append using "C:\Users\obine\OneDrive\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2010\Malawi_wave1_completedata_2010.dta"
+append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2013\Malawi_wave2_completedata_2013.dta" 
 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2016\Malawi_wave3_completedata_2016.dta" 
 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\mwi_wave2019\Malawi_wave4_completedata_2019.dta"
 
-order year
+order year HHID
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Malawi_complete_data.dta", replace
 
 
-
-
+*tabstat total_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)

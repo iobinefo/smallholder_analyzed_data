@@ -32,10 +32,10 @@ ren hh_a03_2 ward_name
 ren hh_a03_3a village 
 ren hh_a03_3b village_name
 ren hh_a04_1 ea
-*ren sdd_weights weight //sdd = y5
+ren y5_panelweight weight //sdd = y5
 *ren sdd_hhid y5_hhid 
 *gen rural = (sdd_rural==1) // was clustertype in w4
-keep y5_hhid region district ward village ward_name village_name ea strataid clusterid
+keep y5_hhid region district ward village ward_name weight village_name ea strataid clusterid
 save "${tza_GHS_W5_created_data}\hhids.dta", replace
 
 
@@ -468,7 +468,7 @@ tab org_fert,missing
 
 
 
-collapse (sum) dist_cens total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(HHID)
+collapse (sum)  total_qty total_valuefert (max) dist_cens org_fert tpricefert_cens_mrk, by(HHID)
 la var org_fert "1= if used organic fertilizer"
 la var dist_cens  "Distance travelled from plot to market in km"
 label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
@@ -698,7 +698,7 @@ tab pry_edu if hh_b05==1 , missing
 tab finish_pry if hh_b05==1 , missing 
 tab finish_sec if hh_b05==1 , missing
 
-collapse (sum) num_mem  (max) hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
+collapse (sum) num_mem  (max) weight hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
 la var num_mem  "household size"
 la var femhead "=1 if head is female"
 la var hh_headage_mrk "age of household head in years"
@@ -1156,6 +1156,8 @@ save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
 
 
+tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+
 
 
 
@@ -1175,4 +1177,5 @@ save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\comple
 
 
 
+tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 

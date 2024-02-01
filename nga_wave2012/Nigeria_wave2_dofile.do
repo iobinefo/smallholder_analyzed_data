@@ -10,6 +10,20 @@ global Nigeria_GHS_W2_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsm
 global Nigeria_GHS_W2_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012"
 
 
+********************************************************************************
+* WEIGHTS *
+********************************************************************************
+
+use "${Nigeria_GHS_W2_raw_data}/Post Planting Wave 2\Household\secta_plantingw2.dta" , clear
+gen rural = (sector==2)
+lab var rural "1= Rural"
+keep hhid zone state lga ea wt_wave2 rural
+ren wt_wave2 weight
+collapse (max) weight, by (hhid)
+save  "${Nigeria_GHS_W2_created_data}/weight.dta", replace
+
+
+
 
 
 ************************
@@ -143,12 +157,12 @@ label list institute2
 
 gen private_fert1_qty = s11dq16 if institute ==4
 tab private_fert1_qty, missing
-gen private_fert2_qty = s11dq28 if institute2 ==4
+gen private_fert2_qty = s11dq28 if institute2 ==2
 tab private_fert2_qty,missing
 
 gen private_fert1_val = s11dq19 if institute ==4
 tab private_fert1_val,missing
-gen private_fert2_val = s11dq29 if institute2 ==4
+gen private_fert2_val = s11dq29 if institute2 ==2
 tab private_fert2_val,missing
 
 egen total_qty = rowtotal(private_fert1_qty private_fert2_qty)
@@ -1128,6 +1142,8 @@ use "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace
 
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", gen (subsidized)
 sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\weight.dta", gen (wgt)
+sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\savings_2012.dta", gen (savings)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\credit_2012.dta", gen (credit)
@@ -1154,3 +1170,5 @@ sort hhid
 save "${Nigeria_GHS_W2_created_data}\Nigeria_wave2_complete_data.dta.dta", replace
 
 
+
+tabstat total_qty subsidy_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)

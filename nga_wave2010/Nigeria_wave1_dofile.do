@@ -8,6 +8,22 @@ global Nigeria_GHS_W1_created_data  "C:\Users\obine\Music\Documents\Smallholder 
 
 
 
+
+
+********************************************************************************
+* WEIGHTS *
+********************************************************************************
+
+use "${Nigeria_GHS_W1_raw_data}/Post Planting Wave 1\Household\secta_plantingw1.dta" , clear
+gen rural = (sector==2)
+lab var rural "1= Rural"
+keep hhid zone state lga ea wt_wave1 rural
+ren wt_wave1 weight
+collapse (max) weight, by (hhid)
+save  "${Nigeria_GHS_W1_created_data}/weight.dta", replace
+
+
+
 ************************
 *Geodata Variables
 ************************
@@ -76,7 +92,7 @@ sum private,detail
 *************Getting Subsidized quantity and Dummy Variable *******************
 gen subsidy_qty1 = s11dq15 if institute ==4
 tab subsidy_qty1
-gen subsidy_qty2 = s11dq26 if institute2 ==4
+gen subsidy_qty2 = s11dq26 if institute2 ==2
 tab subsidy_qty2
 
 
@@ -88,7 +104,7 @@ sum subsidy_qty,detail
 gen subsidy_dummy = 0
 replace subsidy_dummy = 1 if institute==4
 tab subsidy_dummy, missing
-replace subsidy_dummy = 1 if institute2==4
+replace subsidy_dummy = 1 if institute2==2
 tab subsidy_dummy, missing
 
 
@@ -132,7 +148,7 @@ label list institute2
 
 gen private_fert1_qty = s11dq15 if institute ==6
 tab private_fert1_qty
-gen private_fert2_qty = s11dq26 if institute2 ==6
+gen private_fert2_qty = s11dq26 if institute2 ==3
 tab private_fert2_qty
 
 gen private_fert1_val = s11dq18 if institute ==6
@@ -141,7 +157,7 @@ egen val2_cens = median (s11dq31)
 tab val2_cens
 replace s11dq31= val2_cens if s11dq31==.
 tab s11dq31
-gen private_fert2_val = s11dq31 if institute2 ==6
+gen private_fert2_val = s11dq31 if institute2 ==3
 tab private_fert2_val
 
 
@@ -976,6 +992,9 @@ use "${Nigeria_GHS_W1_created_data}\purchasefert.dta", replace
 
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\subsidized_fert.dta", gen (subsidized)
 sort hhid
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
+sort hhid
+
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\savings.dta", gen (savings)
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\credit_access.dta", gen (credit)
@@ -1001,3 +1020,6 @@ gen year = 2010
 sort hhid
 save "${Nigeria_GHS_W1_created_data}\Nigeria_wave1_complete_data.dta", replace
 
+
+
+tabstat total_qty subsidy_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
