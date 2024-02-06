@@ -1189,3 +1189,7 @@ tabstat total_qty subsidy_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_m
 
 
 
+misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
+

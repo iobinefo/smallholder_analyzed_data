@@ -1192,3 +1192,8 @@ save "${tza_GHS_W4_created_data}\tanzania_wave4_completedata_2014.dta", replace
 
 tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
+misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
+
+

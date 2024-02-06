@@ -1169,6 +1169,9 @@ save "${Nigeria_GHS_W4_created_data}\Nigeria_wave4_completedata_2018.dta", repla
 
 *tabstat total_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
+misstable summarize femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
 
 
 
@@ -1193,7 +1196,7 @@ save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\comple
 
 
 
-tabstat total_qty subsidy_qty mrk_dist dist_cens_mrk tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty subsidy_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr rice_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
 
@@ -1201,13 +1204,8 @@ tabstat total_qty subsidy_qty mrk_dist dist_cens_mrk tpricefert_cens_mrk num_mem
 
 
 
-
-
-
-
-
-
-
+misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 
 
 

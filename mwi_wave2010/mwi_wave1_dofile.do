@@ -975,6 +975,8 @@ collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 
 la value soil soil_qty_rev2
+la var soil_qty_rev2 "1 Good, 2 fair, 3 poor"
+
  
 save "${mwi_GHS_W1_created_data}\soil_quality_2010.dta", replace 
 
@@ -1051,4 +1053,9 @@ save "${mwi_GHS_W1_created_data}\Malawi_wave1_completedata_2010.dta", replace
 
 
 tabstat total_qty subsidy_qty mrk2_dist tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+
+
+misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
 

@@ -954,6 +954,7 @@ save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 
 
 
+
 *******************************
 *Soil Quality
 *******************************
@@ -1045,7 +1046,43 @@ save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
 
 
 
+global wins_upper_thres 99							
+ ********************************************************************************
+* PLOT AREAS *
+********************************************************************************
 
+use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
+merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+
+append using "${tza_GHS_W2_raw_data}\AG_SEC2B.dta", gen(short)
+ren plotnum plot_id
+gen area_acres_est = ag2a_04
+replace area_acres_est = ag2b_15 if area_acres_est==.
+gen area_acres_meas = ag2a_09
+replace area_acres_meas = ag2b_20 if area_acres_meas==.
+
+gen field_size = area_acres_meas
+
+tab field_size, missing
+tab area_acres_est,missing
+replace field_size = area_acres_est  if field_size==.  
+tab field_size, missing
+
+sum field_size, detail
+*replace field_size = 0.52 if field_size==.
+*tab field_size, missing
+
+
+**************Top 95% is 4 hectares
+gen field_size_ha = field_size* (1/2.47105)
+tab field_size_ha, missing
+
+
+_pctile field_size_ha  [aw=weight] , p($wins_upper_thres) 
+gen w_field_size_ha=field_size_ha
+tab w_field_size_ha, missing
+replace w_field_size_ha = r(r1) if w_field_size_ha > r(r1) & w_field_size_ha != . 
+lab var w_field_size_ha "plot_size - Winsorized top 1%"
 
 
 
@@ -1094,3 +1131,10 @@ save "${tza_GHS_W2_created_data}\tanzania_wave2_completedata_2010.dta", replace
 
 
 tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+
+
+misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
+
+
