@@ -1,5 +1,7 @@
 
 
+
+
 clear
 
 global Nigeria_GHS_W1_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\NGA_2010_GHSP-W1_v03_M_STATA (1)" 
@@ -10,11 +12,32 @@ global Nigeria_GHS_W1_created_data  "C:\Users\obine\Music\Documents\Smallholder 
 
 
 
+
+********************************************************************************
+* AG FILTER *
+********************************************************************************
+
+use "${Nigeria_GHS_W1_raw_data}/Post Planting Wave 1\Agriculture\sect11a_plantingw1.dta" , clear
+
+keep hhid s11aq1
+rename (s11aq1) (ag_rainy_10)
+save  "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", replace
+
+
+
+*merge m:1 hhid using ""${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+
+*keep if ag_rainy_10==1
+
+
 ********************************************************************************
 * WEIGHTS *
 ********************************************************************************
 
 use "${Nigeria_GHS_W1_raw_data}/Post Planting Wave 1\Household\secta_plantingw1.dta" , clear
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
 gen rural = (sector==2)
 lab var rural "1= Rural"
 keep hhid zone state lga ea wt_wave1 rural
@@ -28,7 +51,9 @@ save  "${Nigeria_GHS_W1_created_data}/weight.dta", replace
 *Geodata Variables
 ************************
 use "${Nigeria_GHS_W1_raw_data}\Geodata\NGA_PlotGeovariables_Y1.dta", clear
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 
 ren srtmslp_nga plot_slope
 ren srtm_nga  plot_elevation
@@ -56,6 +81,9 @@ save "${Nigeria_GHS_W1_created_data}\geodata.dta", replace
 *Subsidized Fertilizer
 ****************************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11d_plantingw1.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
 *graph bar (count), over(s11dq13)
 
 *s11dq13 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -123,7 +151,9 @@ save "${Nigeria_GHS_W1_created_data}\subsidized_fert.dta", replace
 *******************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11d_plantingw1.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 *graph bar (count), over(s11dq13)
 
 *s11dq13 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -257,7 +287,9 @@ save "${Nigeria_GHS_W1_created_data}\purchasefert.dta", replace
 *************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect4_plantingw1.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 
 *s4q1  1= formal bank account
 *s4q5b  s4q5d   s4q5f  types of formal fin institute used to save 
@@ -292,7 +324,9 @@ save "${Nigeria_GHS_W1_created_data}\savings.dta", replace
 ***************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect4_plantingw1.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 *s4q8b  s4q8d   s4q8f   types of formal fin institute used to borrow 
 *s4q9      1= used inoformal group to borrow money
 
@@ -319,6 +353,7 @@ save "${Nigeria_GHS_W1_created_data}\credit_access.dta", replace
 ****************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Harvest Wave 1\Community\sectc2_harvestw1.dta", clear
+
 *is_cd  219 for market infrastructure
 *sc2q3  distance to infrastructure in km
 
@@ -357,7 +392,9 @@ save "${Nigeria_GHS_W1_created_data}\market_distance.dta", replace
 *Extension Visit 
 *******************************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11l1_plantingw1.dta", clear
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 
 
 ren s11lq1 ext_acess
@@ -375,7 +412,9 @@ merge 1:1 hhid indiv using "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Hous
 
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W1_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
 
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 **************
 *market distance
 *************
@@ -524,6 +563,9 @@ save "${Nigeria_GHS_W1_created_data}\demographics.dta", replace
 *Labor Age 
 *********************************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect1_plantingw1.dta", clear
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
 ren s1q4 hh_age
 
 gen worker = 1
@@ -543,7 +585,9 @@ save "${Nigeria_GHS_W1_created_data}\labor_age.dta", replace
 *Safety Net
 *****************************
 use "${Nigeria_GHS_W1_raw_data}\Post Harvest Wave 1\Household\sect14_harvestw1.dta", clear
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 gen safety_net = 0
 replace safety_net =1 if s14q1 ==1
 tab safety_net
@@ -713,6 +757,9 @@ save "${Nigeria_GHS_W1_created_data}\food_prices.dta", replace
 ***************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect7b_plantingw1.dta", clear
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W1_created_data}\food_prices.dta", keepusing (median_pr_ea median_pr_lga median_pr_state median_pr_zone maize_price_mr rice_price_mr)
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
 
 **************
 *maize price
@@ -774,7 +821,9 @@ save "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", replace
 
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect5_plantingw1.dta", clear
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
 sort hhid item_cd
 
 collapse (sum) s5q1, by (zone state lga ea hhid item_cd)
@@ -792,6 +841,10 @@ sort hhid item_cd
 merge 1:1 hhid item_cd using "${Nigeria_GHS_W1_created_data}\assest_qty.dta", keepusing(zone state lga ea s5q1)
 
 drop _merge
+
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
 gen hhasset_value = s5q4*s5q1
 
 
@@ -917,7 +970,9 @@ use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11a1_planti
 merge 1:1 hhid plotid using  "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11b_plantingw1.dta"
 *merging in harvest section to get areas for new plots
 merge 1:1 hhid plotid using "${Nigeria_GHS_W1_raw_data}\Post Harvest Wave 1\Agriculture\secta1_harvestw1.dta", gen(plot_merge)
+merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
  
 ren s11aq4a area_size
 ren s11aq4b area_unit
@@ -1013,18 +1068,19 @@ merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", gen 
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\geodata.dta", gen (geodata)
 sort hhid
-merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta", gen(soil)
-sort hhid
+*merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta", gen(soil)
+*sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\land_holdings.dta"
 gen year = 2010
 sort hhid
+order year
 save "${Nigeria_GHS_W1_created_data}\Nigeria_wave1_complete_data.dta", replace
 
 
 
-tabstat total_qty subsidy_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty subsidy_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage hhasset_value worker maize_price_mr land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
+*soil_qty_rev2 soil_qty_rev2 hhasset_value
 
-
-misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
-proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 

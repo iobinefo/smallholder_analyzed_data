@@ -18,6 +18,27 @@ global tza_GHS_W5_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms
 
 
 
+****************************
+*AG FILTER
+****************************
+
+
+
+
+
+
+use "${tza_GHS_W5_raw_data }\ag_sec_01.dta"  , clear
+keep y5_hhid ag01_09
+gen ag_rainy_20 = ag01_09
+replace ag_rainy_20 = 0 if ag_rainy_20== 2 | ag_rainy_20==.
+tab ag_rainy_20, missing
+collapse (max) ag_rainy_20, by (y5_hhid)
+save "${tza_GHS_W5_created_data}\ag_rainy_20.dta", replace
+
+*merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+*keep if ag_rainy_20==1
+
 
 
 
@@ -184,7 +205,9 @@ keep y5_hhid region district ward village ward_name village_name ea strataid clu
 
 merge m:1 region district ea using "${tza_GHS_W5_created_data}\food_pr.dta"
 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 ****MAIZE
 
 egen median_pr_ea_id = median(maize_price), by (ea)
@@ -298,7 +321,9 @@ use "${tza_GHS_W5_raw_data }\ag_sec_3a.dta",clear
 merge 1:1 y5_hhid plot_id using "${tza_GHS_W5_raw_data}\ag_sec_3b.dta", gen (fertilizer)
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 ****************
 *organic fert variables
@@ -486,6 +511,9 @@ save "${tza_GHS_W5_created_data}\commercial_fert_2020.dta", replace
 
 
 use "${tza_GHS_W5_raw_data}\hh_sec_q1.dta",clear 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 
 * hh_q10   1=having a bank account
@@ -531,6 +559,9 @@ save "${tza_GHS_W5_created_data}\savings_2020.dta", replace
 *******************************************************
 
 use "${tza_GHS_W5_raw_data}\hh_sec_p.dta",clear 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 *hh_p06 value of borrowed credit
 *hh_p03 source of credit (formal <=5)(informal >5)
@@ -566,6 +597,9 @@ save "${tza_GHS_W5_created_data}\credit_access_2020.dta", replace
 
 
 use "${tza_GHS_W5_raw_data}\ag_sec_12b.dta",clear 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 ren ag12b_08 ext_acess 
 
@@ -590,7 +624,9 @@ save "${tza_GHS_W5_created_data}\Extension_access_2020.dta", replace
 use "${tza_GHS_W5_raw_data}\hh_sec_b.dta",clear 
 merge 1:1 y5_hhid indidy5 using "${tza_GHS_W5_raw_data}\hh_sec_c.dta", gen (household)
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 *hh_b02 sex 
 *hh_b05 relationshiop to head
@@ -714,6 +750,9 @@ save "${tza_GHS_W5_created_data}\demographics_2020.dta", replace
 
 use "${tza_GHS_W5_raw_data}\hh_sec_b.dta",clear 
 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 ren hh_b04 hh_age
 
@@ -734,6 +773,9 @@ save "${tza_GHS_W5_created_data}\labor_age_2020.dta", replace
 ********************************
 
 use "${tza_GHS_W5_raw_data}\hh_sec_o1.dta",clear 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 *hh_o01 received assistance
 gen safety_net =1 if hh_o01==1 
@@ -754,6 +796,9 @@ save "${tza_GHS_W5_created_data}\safety_net_2020.dta", replace
 ***************
 use "${tza_GHS_W5_raw_data}\HH_SEC_J1.dta",clear 
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 *hh_j03_2 from purchases
 *hh_j05_2 from own production
@@ -800,6 +845,9 @@ save "${tza_GHS_W5_created_data}\net_buyer_seller_2020.dta", replace
 use "${tza_GHS_W5_raw_data}\hh_sec_m.dta",clear 
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
 
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
 ren y5_hhid HHID
 *hh_m01 qty of items
 *hh_m04 scrap value of items
@@ -867,7 +915,9 @@ save "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", replace
 ********************************************************************************
 
 use "${tza_GHS_W5_raw_data}\ag_sec_02.dta",clear
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 
 gen area_acres_est = ag2a_04
 gen area_acres_meas = ag2a_09
@@ -903,7 +953,11 @@ save "${tza_GHS_W5_created_data}\land_holding_2020.dta", replace
 *Soil Quality
 *******************************
 use "${tza_GHS_W5_raw_data}\ag_sec_02.dta",clear
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
+
+drop filter
 
 gen area_acres_est = ag2a_04
 gen area_acres_meas = ag2a_09
@@ -932,7 +986,9 @@ keep y5_hhid plot_id field_size
  
 merge 1:1 y5_hhid plot_id using "${tza_GHS_W5_raw_data}\ag_sec_3a.dta"
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 
 ren y5_hhid HHID
 ren plot_id plotnum
@@ -967,25 +1023,8 @@ tab soil_qty_rev2, missing
 
 
 
-/*
-egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
-egen median_ward  = median(soil_qty_rev2), by (region district ward )
-egen median_district  = median(soil_qty_rev2), by (region district )
-egen median_region  = median(soil_qty_rev2), by (region )
-
-replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
-replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
-tab soil_qty_rev2,missing
-replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
-tab soil_qty_rev2,missing
-replace soil_qty_rev2 = median_region if soil_qty_rev2==.
-tab soil_qty_rev2,missing
-
-
-
-replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
-replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
-tab soil_qty_rev2,missing*/
+egen mid_soil = median(soil_qty_rev2)
+replace soil_qty_rev2 = mid_soil if soil_qty_rev2==.
 
 
 collapse (mean) soil_qty_rev2 , by (HHID)
@@ -1008,8 +1047,11 @@ save "${tza_GHS_W5_created_data}\soil_quality_2020.dta", replace
 *Plot Slope
 *******************************
 use "${tza_GHS_W5_raw_data}\ag_sec_02.dta",clear
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 
+drop filter
 gen area_acres_est = ag2a_04
 gen area_acres_meas = ag2a_09
 
@@ -1037,7 +1079,9 @@ keep y5_hhid plot_id field_size
  
 merge 1:1 y5_hhid plot_id using "${tza_GHS_W5_raw_data}\ag_sec_3a.dta"
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
+keep if ag_rainy_20==1
 
 ren y5_hhid HHID
 ren plot_id plotnum
@@ -1071,26 +1115,6 @@ list HHID plotnum  field_size slope slope_min plot_slope dup if dup>0
 tab plot_slope, missing
 
 
-
-/*
-egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
-egen median_ward  = median(soil_qty_rev2), by (region district ward )
-egen median_district  = median(soil_qty_rev2), by (region district )
-egen median_region  = median(soil_qty_rev2), by (region )
-
-replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
-replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
-tab soil_qty_rev2,missing
-replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
-tab soil_qty_rev2,missing
-replace soil_qty_rev2 = median_region if soil_qty_rev2==.
-tab soil_qty_rev2,missing
-
-
-
-replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
-replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
-tab soil_qty_rev2,missing*/
 
 
 collapse (mean) plot_slope , by (HHID)

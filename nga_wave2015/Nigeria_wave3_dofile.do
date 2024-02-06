@@ -20,10 +20,30 @@ global Nigeria_GHS_W3_created_data  "C:\Users\obine\Music\Documents\Smallholder 
 
 
 ********************************************************************************
+* AG FILTER *
+********************************************************************************
+
+use "${Nigeria_GHS_W3_raw_data}/sect11a_plantingw3.dta" , clear
+
+keep hhid s11aq1
+rename (s11aq1) (ag_rainy_15)
+save  "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", replace
+
+
+
+*merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
+
+*keep if ag_rainy_15==1
+
+
+********************************************************************************
 * WEIGHTS *
 ********************************************************************************
 
 use "${Nigeria_GHS_W3_raw_data}/secta_plantingw3.dta" , clear
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
+
+keep if ag_rainy_15==1
 gen rural = (sector==2)
 lab var rural "1= Rural"
 keep hhid zone state lga ea wt_wave3 rural
@@ -40,7 +60,9 @@ save  "${Nigeria_GHS_W3_created_data}/weight.dta", replace
 
 use "${Nigeria_GHS_W3_raw_data}\NGA_PlotGeovariables_Y3.dta", clear
 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 ren srtmslp_nga plot_slope
 ren srtm_nga  plot_elevation
 ren twi_nga   plot_wetness

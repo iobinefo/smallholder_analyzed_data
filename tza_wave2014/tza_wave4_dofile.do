@@ -18,6 +18,25 @@ global tza_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms
 
 
 
+****************************
+*AG FILTER
+****************************
+
+
+
+
+
+
+use "${tza_GHS_W4_raw_data }\ag_filters.dta", clear
+keep y4_hhid ag2a_01
+rename (ag2a_01) (ag_rainy_14)
+save "${tza_GHS_W4_created_data}\ag_rainy_14.dta", replace
+
+*merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_20.dta", gen(filter)
+
+*keep if ag_rainy_14==1
+
+
 ****************
 *food prices
 ***************
@@ -138,6 +157,9 @@ lab var rural "1=Household lives in a rural area"
 
 merge m:1 region district ea using "${tza_GHS_W4_created_data}\food_pr.dta"
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 
 ****MAIZE
 
@@ -217,6 +239,9 @@ use "${tza_GHS_W4_raw_data }\ag_sec_3a.dta",clear
 
 merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data }\ag_sec_3b.dta"
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 ****************
 *organic fert variables
@@ -322,6 +347,9 @@ use "${tza_GHS_W4_raw_data }\ag_sec_3a.dta",clear
 merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data }\ag_sec_3b.dta", gen (fertilizer)
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 
 ren y4_hhid HHID
 
@@ -495,6 +523,10 @@ save "${tza_GHS_W4_created_data}\commercial_fert_2014.dta", replace
 
 
 use "${tza_GHS_W4_raw_data}\hh_sec_q1.dta",clear 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
+
 ren y4_hhid HHID
 
 * hh_q10   1=having a bank account
@@ -538,6 +570,9 @@ save "${tza_GHS_W4_created_data}\savings_2014.dta", replace
 *******************************************************
 
 use "${tza_GHS_W4_raw_data}\hh_sec_p.dta",clear 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 *hh_p06 value of borrowed credit
 *hh_p03 source of credit (formal <=5)(informal >5)
@@ -572,7 +607,10 @@ save "${tza_GHS_W4_created_data}\credit_access_2014.dta", replace
 
 
 
-use "${tza_GHS_W4_raw_data}\ag_sec_12b.dta",clear 
+use "${tza_GHS_W4_raw_data}\ag_sec_12b.dta",clear
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1 
 ren y4_hhid HHID
 ren ag12b_08 ext_acess 
 
@@ -598,6 +636,9 @@ use "${tza_GHS_W4_raw_data}\hh_sec_b.dta",clear
 merge 1:1 y4_hhid indidy4 using "${tza_GHS_W4_raw_data}\hh_sec_c.dta", gen (household)
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 *hh_b02 sex 
 *hh_b05 relationshiop to head
@@ -718,7 +759,9 @@ save "${tza_GHS_W4_created_data}\demographics_2014.dta", replace
 *********************************
 
 use "${tza_GHS_W4_raw_data}\hh_sec_b.dta",clear 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
 
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 ren hh_b04 hh_age
 
@@ -739,6 +782,9 @@ save "${tza_GHS_W4_created_data}\labor_age_2014.dta", replace
 ********************************
 
 use "${tza_GHS_W4_raw_data}\hh_sec_o1.dta",clear 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 *hh_o01 received assistance
 gen safety_net  =1 if hh_o01==1 
@@ -757,6 +803,9 @@ save "${tza_GHS_W4_created_data}\safety_net_2014.dta", replace
 use "${tza_GHS_W4_raw_data}\HH_SEC_J1.dta",clear 
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 *hh_j03_2 from purchases
 *hh_j05_2 from own production
@@ -803,6 +852,9 @@ save "${tza_GHS_W4_created_data}\net_buyer_seller_2014.dta", replace
 use "${tza_GHS_W4_raw_data}\hh_sec_m.dta",clear 
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 *hh_m01 qty of items
 *hh_m04 scrap value of items
@@ -869,12 +921,15 @@ save "${tza_GHS_W4_created_data}\hhasset_value_2014.dta", replace
 ********************************************************************************
 
 use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
-append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
+*append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
 
 gen area_acres_est = ag2a_04
-replace area_acres_est = ag2b_15 if area_acres_est==.
+*replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
-replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
 
 
 
@@ -913,12 +968,16 @@ save "${tza_GHS_W4_created_data}\land_holding_2014.dta", replace
 *Soil Quality
 *******************************
 use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
-append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
+drop filter
+*append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
 
 gen area_acres_est = ag2a_04
-replace area_acres_est = ag2b_15 if area_acres_est==.
+*replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
-replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
 
 
 
@@ -954,6 +1013,9 @@ drop if any
 merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data}\ag_sec_3a.dta"
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta", gen(hhids)
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 
 ren ag3a_11 soil_quality
@@ -1026,12 +1088,12 @@ save "${tza_GHS_W4_created_data}\soil_quality_2014.dta", replace
 *Plot Slope
 *******************************
 use "${tza_GHS_W4_raw_data}\ag_sec_2a.dta",clear
-append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
+*append using "${tza_GHS_W4_raw_data}\ag_sec_2b.dta", gen (short)
 
 gen area_acres_est = ag2a_04
-replace area_acres_est = ag2b_15 if area_acres_est==.
+*replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
-replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
 
 
 
@@ -1067,7 +1129,9 @@ drop if any
 merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data}\ag_sec_3a.dta"
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta", gen(hhids)
 
+merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
 
+keep if ag_rainy_14==1
 ren y4_hhid HHID
 
 ren ag3a_17 slope
@@ -1101,31 +1165,10 @@ list HHID plotnum  field_size slope slope_min plot_slope  dup if dup>0
 tab plot_slope, missing
 
 
-/*
-
-egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
-egen median_ward  = median(soil_qty_rev2), by (region district ward )
-egen median_district  = median(soil_qty_rev2), by (region district )
-egen median_region  = median(soil_qty_rev2), by (region )
-
-replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
-replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
-tab soil_qty_rev2,missing
-replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
-tab soil_qty_rev2,missing
-replace soil_qty_rev2 = median_region if soil_qty_rev2==.
-tab soil_qty_rev2,missing
-
-
-
-replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
-replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
-tab soil_qty_rev2,missing*/
 
 
 collapse (mean) plot_slope , by (HHID)
-/*label define slope 1 "flat bottom" 2 "flat top" 3 "slightly sloped" 4 "very steep "
-label values slope plot_slope_rev2*/
+
 la var plot_slope "1=flat bottom 2= flat top 3=slightly sloped 4=very steep"
 
 save "${tza_GHS_W4_created_data}\geodata_2014.dta", replace

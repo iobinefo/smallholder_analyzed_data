@@ -10,11 +10,36 @@ global Nigeria_GHS_W2_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsm
 global Nigeria_GHS_W2_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012"
 
 
+
+
+
+********************************************************************************
+* AG FILTER *
+********************************************************************************
+
+use "${Nigeria_GHS_W2_raw_data}/Post Planting Wave 2\Agriculture\sect11a_plantingw2.dta" , clear
+
+keep hhid s11aq1
+rename (s11aq1) (ag_rainy_12)
+save  "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", replace
+
+
+
+*merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+*keep if ag_rainy_12==1
+
+
+
+
 ********************************************************************************
 * WEIGHTS *
 ********************************************************************************
 
 use "${Nigeria_GHS_W2_raw_data}/Post Planting Wave 2\Household\secta_plantingw2.dta" , clear
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 gen rural = (sector==2)
 lab var rural "1= Rural"
 keep hhid zone state lga ea wt_wave2 rural
@@ -32,7 +57,9 @@ save  "${Nigeria_GHS_W2_created_data}/weight.dta", replace
 
 use "${Nigeria_GHS_W2_raw_data}\Geodata Wave 2\NGA_PlotGeovariables_Y2.dta", clear
 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren srtmslp_nga plot_slope
 ren srtm_nga  plot_elevation
 ren twi_nga   plot_wetness
@@ -66,7 +93,9 @@ save "${Nigeria_GHS_W2_created_data}\geodata_2012.dta", replace
 
 
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11d_plantingw2.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 *************Checking to confirm its the subsidized price *******************
 
 *s11dq14 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -133,7 +162,9 @@ save "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", replace
 ***********************************************
 
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11d_plantingw2.dta",clear  
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 *s11dq14 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
 *s11dq26 2st 		source of inorg purchased fertilizer (1=govt, 2=private)
 *s11dq40     		source of org purchased fertilizer (1=govt, 2=private)
@@ -260,7 +291,9 @@ save "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace
 ************************************************
 
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect4a_plantingw2.dta",clear  
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 *s4aq1  1= formal bank
 *s4aq9b s4aq9d s4aq9f  types of formal fin institute used to save money
 *s4aq10 1= informal saving
@@ -296,7 +329,9 @@ save "${Nigeria_GHS_W2_created_data}\savings_2012.dta", replace
 *******************************************************
 
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect4a_plantingw2.dta",clear  
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 *s4aq12b s4aq12d s4aq12f  types of formal fin institute used to borrow money
 *s4aq13     1= borrowed from informal group
 
@@ -331,7 +366,9 @@ save "${Nigeria_GHS_W2_created_data}\credit_2012.dta", replace
 
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11l1_plantingw2.dta",clear  
 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 
 ren s11l1q1 ext_acess
 
@@ -353,6 +390,7 @@ save "${Nigeria_GHS_W2_created_data}\extension_visit_2012.dta", replace
 ****************************
 
 use "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Community\sectc2_harvestw2.dta", clear
+
 *is_cd  219 for market infrastructure
 *c2q3  distance to infrastructure in km
 
@@ -400,7 +438,9 @@ use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect1_plantingw2.
 merge 1:1 hhid indiv using "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect2_plantingw2.dta", gen(household)
 
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W2_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 
 **************
 *market distance
@@ -550,7 +590,9 @@ save "${Nigeria_GHS_W2_created_data}\demographics_2012.dta", replace
 *Labor Age 
 *********************************
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect1_plantingw2.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren s1q6 hh_age
 
 gen worker = 1
@@ -570,7 +612,9 @@ save "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta", replace
 ********************************
 
 use "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Household\sect14_harvestw2.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren s14q1 safety_net
 replace safety_net =0 if safety_net ==2 | safety_net==.
 tab safety_net,missing
@@ -690,7 +734,9 @@ save "${Nigeria_GHS_W2_created_data}\food_prices.dta", replace
 ***************
 use "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Household\sect7b_plantingw2.dta", clear
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W2_created_data}\food_prices.dta", keepusing ( maize_price_mr rice_price_mr)
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 **********
 *maize
 *********
@@ -825,6 +871,9 @@ save "${Nigeria_GHS_W2_created_data}\item_cost_2012.dta", replace
 sort hhid item_cd
 merge 1:1 hhid item_cd using "${Nigeria_GHS_W2_created_data}\item_qty_2012.dta", keepusing (zone state lga ea s5q1)
 drop _merge
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 gen hhasset_value = s5q4*s5q1
 tab hhasset_value
 
@@ -953,7 +1002,9 @@ merge 1:1 hhid plotid using  "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Ag
 *merging in harvest section to get areas for new plots
 merge 1:1 hhid plotid using "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Agriculture\secta1_harvestw2.dta", gen(plot_merge)
 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren s11aq4a area_size
 ren s11aq4b area_unit
 ren sa1q9a area_size2
@@ -1012,7 +1063,9 @@ merge 1:1 hhid plotid using  "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Ag
 *merging in harvest section to get areas for new plots
 merge 1:1 hhid plotid using "${Nigeria_GHS_W2_raw_data}\Post Harvest Wave 2\Agriculture\secta1_harvestw2.dta", gen(plot_merge)
 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren s11aq4a area_size
 ren s11aq4b area_unit
 ren sa1q9a area_size2
@@ -1052,7 +1105,9 @@ keep zone state lga sector ea hhid plotid field_size
 
 merge 1:1 hhid plotid using "${Nigeria_GHS_W2_raw_data}\Post Planting Wave 2\Agriculture\sect11b1_plantingw2.dta"
 
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren s11b1q45 soil_quality
 tab soil_quality, missing
 
@@ -1087,20 +1142,6 @@ list hhid plotid  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>
 
 egen med_soil = median(soil_qty_rev2)
 
-
-egen med_soil_ea = median(soil_qty_rev2), by (ea)
-egen med_soil_lga = median(soil_qty_rev2), by (lga)
-egen med_soil_state = median(soil_qty_rev2), by (state)
-egen med_soil_zone = median(soil_qty_rev2), by (zone)
-
-replace soil_qty_rev2= med_soil_ea if soil_qty_rev2==.
-tab soil_qty_rev2, missing
-replace soil_qty_rev2= med_soil_lga if soil_qty_rev2==.
-tab soil_qty_rev2, missing
-replace soil_qty_rev2= med_soil_state if soil_qty_rev2==.
-tab soil_qty_rev2, missing
-replace soil_qty_rev2= med_soil_zone if soil_qty_rev2==.
-tab soil_qty_rev2, missing
 
 *replace soil_qty_rev2= med_soil if soil_qty_rev2==.
 tab soil_qty_rev2, missing

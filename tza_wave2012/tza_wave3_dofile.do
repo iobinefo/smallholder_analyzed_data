@@ -13,8 +13,29 @@ clear
 
 
 
-global tza_GHS_W3_raw_data 		"C:\Users\obine\Music\Documents\Smallholder lsms STATA\TZA_2012_NPS-R3_v01_M_STATA8_English_labels"
+global tza_GHS_W3_raw_data      "C:\Users\obine\Music\Documents\Smallholder lsms STATA\TZA_2012_NPS-R3_v01_M_STATA8_English_labels"
 global tza_GHS_W3_created_data  "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2012"
+
+
+
+****************************
+*AG FILTER
+****************************
+
+
+
+
+
+
+use "${tza_GHS_W3_raw_data }\FILTERS.dta", clear
+keep y3_hhid ag2a_01
+rename (ag2a_01) (ag_rainy_12)
+save "${tza_GHS_W3_created_data}\ag_rainy_12.dta", replace
+
+
+*merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+*keep if ag_rainy_12==1
 
 
 
@@ -151,6 +172,9 @@ keep y3_hhid region district ward ea rural weight strataid clusterid y2_hhid hh_
 lab var rural "1=Household lives in a rural area"
 merge m:1 region district ea using "${tza_GHS_W3_created_data}\food_pr.dta"
 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 
 ****MAIZE
 
@@ -219,7 +243,9 @@ save "${tza_GHS_W3_created_data}\food_prices_2012.dta", replace
 ************************
 
 use "${tza_GHS_W3_raw_data }\HouseholdGeovars_Y3.dta", clear
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 
 ren soil02 plot_slope
@@ -257,7 +283,9 @@ save "${tza_GHS_W3_created_data}\geodata_2012.dta", replace
 use "${tza_GHS_W3_raw_data }\AG_SEC_3A.dta",clear 
 
 merge 1:1 y3_hhid plotnum using "${tza_GHS_W3_raw_data }\AG_SEC_3B.dta"
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 ****************
 *organic fert variables
@@ -363,7 +391,9 @@ use "${tza_GHS_W3_raw_data }\AG_SEC_3A.dta",clear
 
 merge 1:1 y3_hhid plotnum using "${tza_GHS_W3_raw_data }\AG_SEC_3B.dta", gen (fertilizer)
 merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 
 
@@ -534,6 +564,9 @@ save "${tza_GHS_W3_created_data}\commercial_fert_2012.dta", replace
 
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_Q1.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 
 * hh_q10   1=having a bank account
@@ -577,6 +610,9 @@ save "${tza_GHS_W3_created_data}\savings_2012.dta", replace
 *******************************************************
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_P.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 *hh_p06 value of borrowed credit
 *hh_p03 source of credit (formal <=5)(informal >5)
@@ -612,6 +648,9 @@ save "${tza_GHS_W3_created_data}\credit_access_2012.dta", replace
 
 
 use "${tza_GHS_W3_raw_data}\AG_SEC_12B.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 ren ag12b_08 ext_acess 
 
@@ -638,6 +677,9 @@ use "${tza_GHS_W3_raw_data}\HH_SEC_B.dta",clear
 
 merge 1:1 y3_hhid indidy3 using "${tza_GHS_W3_raw_data}\HH_SEC_C.dta", gen (household)
 merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 *hh_b02 sex 
 *hh_b05 relationshiop to head
@@ -757,7 +799,9 @@ save "${tza_GHS_W3_created_data}\demographics_2012.dta", replace
 *********************************
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_B.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
 
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 ren hh_b04 hh_age
 
@@ -778,6 +822,9 @@ save "${tza_GHS_W3_created_data}\labor_age_2012.dta", replace
 ********************************
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_O1.dta",clear 
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 *hh_o01 received assistance
 gen safety_net =1 if hh_o01==1 
@@ -798,6 +845,9 @@ save "${tza_GHS_W3_created_data}\safety_net_2012.dta", replace
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_J1.dta",clear 
 merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta", gen (hhid)
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 
 ren y3_hhid HHID
 *hh_j03_2 from purchases
@@ -844,6 +894,9 @@ save "${tza_GHS_W3_created_data}\net_buyer_seller_2012.dta", replace
 
 use "${tza_GHS_W3_raw_data}\HH_SEC_M.dta",clear 
 merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta"
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 *hh_m01 qty of items
 *hh_m04 scrap value of items
@@ -911,12 +964,15 @@ save "${tza_GHS_W3_created_data}\hhasset_value_2012.dta", replace
 ********************************************************************************
 
 use "${tza_GHS_W3_raw_data}\AG_SEC_2A.dta",clear
-append using "${tza_GHS_W3_raw_data}\AG_SEC_2B.dta", gen (short)
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+*append using "${tza_GHS_W3_raw_data}\AG_SEC_2B.dta", gen (short)
 ren plotnum plot_id
 gen area_acres_est = ag2a_04
-replace area_acres_est = ag2b_15 if area_acres_est==.
+*replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
-replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
 
 
 
@@ -956,11 +1012,14 @@ save "${tza_GHS_W3_created_data}\land_holding_2012.dta", replace
 *Soil Quality
 *******************************
 use "${tza_GHS_W3_raw_data}\AG_SEC_2A.dta",clear
-append using "${tza_GHS_W3_raw_data}\AG_SEC_2B.dta", gen (short)
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+*append using "${tza_GHS_W3_raw_data}\AG_SEC_2B.dta", gen (short)
 gen area_acres_est = ag2a_04
-replace area_acres_est = ag2b_15 if area_acres_est==.
+*replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
-replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
 
 
 
@@ -991,6 +1050,9 @@ drop if any
  
 merge 1:1 y3_hhid plotnum using "${tza_GHS_W3_raw_data}\AG_SEC_3A.dta"
 merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\hhids.dta", gen(hhids)
+merge m:1 y3_hhid using "${tza_GHS_W3_created_data}\ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
 ren y3_hhid HHID
 
 ren ag3a_11 soil_quality
@@ -1023,6 +1085,9 @@ list HHID plotnum  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup
 tab soil_qty_rev2, missing
 
 
+
+egen mid_soil = median(soil_qty_rev2)
+replace soil_qty_rev2 = mid_soil if soil_qty_rev2==.
 
 /*
 egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
