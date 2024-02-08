@@ -908,16 +908,17 @@ merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta"
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
 keep if ag_rainy_10==1
-ren y2_hhid HHID
+
 *ag11_01 qty of items
 *ag11_02 scrap value of items
 
 gen hhasset_value = ag11_01*ag11_02
 tab hhasset_value,missing
 sum hhasset_value,detail
+/*
 replace hhasset_value = 1440000  if hhasset_value > 1440000  & hhasset_value <.
 replace hhasset_value = 2000 if hhasset_value <2000
-tab hhasset_value
+tab hhasset_value, missing
 
 ************generating the mean vakue**************
 egen mean_val_ea_id = mean(hhasset_value), by (ea)
@@ -958,11 +959,31 @@ tab hhasset_value,missing
 egen mid_asset = median(hhasset_value)
 replace hhasset_value= mid_asset if hhasset_value==.
 tab hhasset_value,missing
+*/
 
 
+collapse (sum) hhasset_value, by (y2_hhid)
 
-collapse (sum) hhasset_value, by (HHID)
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
+keep if ag_rainy_10==1
+foreach v of varlist  hhasset_value  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+tab hhasset_value
+tab hhasset_value_w, missing
+sum hhasset_value hhasset_value_w, detail
+
+ren y2_hhid HHID
+keep HHID hhasset_value hhasset_value_w
 la var hhasset_value "total value of household asset"
 save "${tza_GHS_W2_created_data}\hhasset_value_2010.dta", replace
 
@@ -975,6 +996,7 @@ save "${tza_GHS_W2_created_data}\hhasset_value_2010.dta", replace
 ********************************************************************************
 
 use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
+
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
 keep if ag_rainy_10==1
@@ -989,6 +1011,7 @@ gen field_size = area_acres_meas
 
 tab field_size, missing
 tab area_acres_est,missing
+*br y2_hhid field_size area_acres_est if field_size!=. 
 replace field_size = area_acres_est  if field_size==.  
 tab field_size, missing
 
@@ -1004,9 +1027,30 @@ tab field_size_ha, missing
 
 
 
+
+
+collapse (sum) field_size_ha , by (y2_hhid)
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
+foreach v of varlist  field_size_ha  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+tab field_size_ha
+tab field_size_ha_w, missing
+sum field_size_ha field_size_ha_w, detail
+
 ren y2_hhid HHID
-collapse (sum)  field_size_ha , by (HHID)
 sort HHID
+
+keep HHID field_size_ha field_size_ha_w
 label var field_size_ha "land holding measured using gps in hectares"
 save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 
@@ -1021,6 +1065,7 @@ save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 *Soil Quality
 *******************************
 use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
+
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
 keep if ag_rainy_10==1
@@ -1112,22 +1157,22 @@ la values soil soil_qty_rev2
 la var soil_qty_rev2 "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
 
-/*
-
-global wins_upper_thres 99							
- ********************************************************************************
+						
+ /*********************************************************************************
 * PLOT AREAS *
 ********************************************************************************
 
 use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
-append using "${tza_GHS_W2_raw_data}\AG_SEC2B.dta", gen(short)
+keep if ag_rainy_10==1
+*append using "${tza_GHS_W2_raw_data}\AG_SEC2B.dta", gen(short)
 ren plotnum plot_id
 gen area_acres_est = ag2a_04
-replace area_acres_est = ag2b_15 if area_acres_est==.
+*replace area_acres_est = ag2b_15 if area_acres_est==.
 gen area_acres_meas = ag2a_09
-replace area_acres_meas = ag2b_20 if area_acres_meas==.
+*replace area_acres_meas = ag2b_20 if area_acres_meas==.
 
 gen field_size = area_acres_meas
 
@@ -1144,6 +1189,20 @@ sum field_size, detail
 **************Top 95% is 4 hectares
 gen field_size_ha = field_size* (1/2.47105)
 tab field_size_ha, missing
+
+
+foreach v of varlist  field_size_ha  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab field_size_ha
+tab field_size_ha_w
+sum field_size_ha field_size_ha_w, detail
 
 
 _pctile field_size_ha  [aw=weight] , p($wins_upper_thres) 
@@ -1198,7 +1257,7 @@ save "${tza_GHS_W2_created_data}\tanzania_wave2_completedata_2010.dta", replace
 
 
 
-tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
 misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2

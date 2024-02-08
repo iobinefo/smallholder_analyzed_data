@@ -848,7 +848,7 @@ merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
 keep if ag_rainy_20==1
-ren y5_hhid HHID
+
 *hh_m01 qty of items
 *hh_m04 scrap value of items
 
@@ -859,50 +859,33 @@ replace hhasset_value = 7200000  if hhasset_value > 7200000  & hhasset_value <. 
 replace hhasset_value = 3000 if hhasset_value <3000   //top 4%
 tab hhasset_value,missing
 
-************generating the mean vakue**************
-egen mean_val_ea_id = mean(hhasset_value), by (ea)
-egen mean_val_district  = mean(hhasset_value), by (district )
-egen mean_val_region = mean(hhasset_value), by (region)
-egen mean_val_stratum  = mean(hhasset_value), by (strataid )
+collapse (sum) hhasset_value, by (y5_hhid)
+
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
+
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
+
+foreach v of varlist  hhasset_value  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+tab hhasset_value
+tab hhasset_value_w, missing
+sum hhasset_value hhasset_value_w, detail
 
 
 
 
-egen num_val_ea_id = count(hhasset_value), by (ea)
-egen num_val_district  = count(hhasset_value), by (district )
-egen num_val_region = count(hhasset_value), by (region)
-egen num_val_stratum  = count(hhasset_value), by (strataid )
+ren y5_hhid HHID
 
-
-
-
-tab num_val_ea_id
-tab num_val_region
-tab num_val_stratum
-tab num_val_district
-
-
-
-
-
-
-replace hhasset_value = mean_val_ea_id if hhasset_value ==. & num_val_ea_id >= 2489
-tab hhasset_value,missing
-replace hhasset_value = mean_val_district if hhasset_value ==. & num_val_district >= 2489
-tab hhasset_value,missing
-replace hhasset_value = mean_val_region if hhasset_value ==. & num_val_region >= 2489
-tab hhasset_value,missing
-replace hhasset_value = mean_val_stratum if hhasset_value ==. & num_val_stratum >= 2489
-tab hhasset_value,missing
-
-
-egen mid_asset = median(hhasset_value)
-replace hhasset_value= mid_asset if hhasset_value==.
-tab hhasset_value,missing
-
-
-collapse (sum) hhasset_value, by (HHID)
-
+keep HHID hhasset_value hhasset_value_w
 la var hhasset_value "total value of household asset"
 save "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", replace
 
@@ -939,10 +922,35 @@ tab field_size, missing
 gen field_size_ha = field_size* (1/2.47105)
 tab field_size_ha, missing
 
-ren y5_hhid HHID
-collapse (sum) field_size_ha , by (HHID)
-sort HHID
 
+collapse (sum) field_size_ha , by (y5_hhid)
+
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
+merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
+
+foreach v of varlist  field_size_ha  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+tab field_size_ha
+tab field_size_ha_w, missing
+sum field_size_ha field_size_ha_w, detail
+
+
+
+
+
+
+ren y5_hhid HHID
+sort HHID
+keep HHID field_size_ha field_size_ha_w
 label var field_size_ha "land holding measured using gps in hectares"
 save "${tza_GHS_W5_created_data}\land_holding_2020.dta", replace
 
@@ -1170,7 +1178,7 @@ merge 1:1 HHID using "${tza_GHS_W5_created_data}\geodata_2020.dta", gen (geodata
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", gen (hhasset)
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\land_holding_2020.dta"
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\land_holding_2020.dta", nogen
 
 gen year = 2020
 sort HHID
@@ -1180,7 +1188,7 @@ save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
 
 
-tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
@@ -1203,7 +1211,7 @@ save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\comple
 
 
 
-tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value field_size_ha [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2

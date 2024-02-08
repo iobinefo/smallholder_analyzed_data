@@ -392,12 +392,23 @@ save "${Nigeria_GHS_W1_created_data}\market_distance.dta", replace
 *Extension Visit 
 *******************************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11l1_plantingw1.dta", clear
+ren s11lq1 ext_acess
+preserve
+
+
+
+use "${Nigeria_GHS_W1_raw_data}/Post Harvest Wave 1\Agriculture\secta5a_harvestw1.dta", clear
+ren sa5aq1 ext_acess
+tempfile advie_ph
+save `advie_ph'
+restore
+append using `advie_ph'
 merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
 keep if ag_rainy_10==1
 
-
-ren s11lq1 ext_acess
+replace ext_acess =0 if ext_acess ==.
+ 
 collapse (max) ext_acess, by (hhid)
 la var ext_acess "=1 if received advise from extension services"
 save "${Nigeria_GHS_W1_created_data}\extension_visit.dta", replace 

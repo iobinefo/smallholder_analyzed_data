@@ -121,7 +121,9 @@ save "${Nigeria_GHS_W3_created_data}\geodata_2015.dta", replace
 ****************************
 
 use "${Nigeria_GHS_W3_raw_data}\secta11d_harvestw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 
 *s11dq14 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
 *s11dq26 2st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -199,7 +201,9 @@ save "${Nigeria_GHS_W3_created_data}\subsidized_fert_2015.dta", replace
 *E-Wallet Subsidized Fertilizer
 *****************************************
 use "${Nigeria_GHS_W3_raw_data}\secta11d_harvestw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 *s11dq5a    1= received e-wallet subsidy
 *s11dq5c1	qty of e-wallet subsidized fertilizer used on plot
 *s11dq5c2   units of e-wallet subsiidy (all in kg)
@@ -242,7 +246,9 @@ save "${Nigeria_GHS_W3_created_data}\E-wallet_subsidized_fert_2015.dta", replace
 ***********************************************
 
 use "${Nigeria_GHS_W3_raw_data}\secta11d_harvestw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 
 *s11dq14 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
 *s11dq26 2st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -386,7 +392,9 @@ save "${Nigeria_GHS_W3_created_data}\purchased_fert_2015.dta", replace
 
 
 use "${Nigeria_GHS_W3_raw_data}\sect4a_plantingw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 *s4aq1 1= have a bank account
 *s4aq9b s4aq9d s4aq9f types of fin institute used to save money
 
@@ -424,7 +432,9 @@ save "${Nigeria_GHS_W3_created_data}\savings_2015.dta", replace
 *******************************************************
 
 use "${Nigeria_GHS_W3_raw_data}\sect4c2_plantingw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 *s4cq2b types of money lenders (<=4 for formal lenders)
 *s4cq5  1= already received loan
 
@@ -460,7 +470,9 @@ save "${Nigeria_GHS_W3_created_data}\credit_access_2015.dta", replace
 use "${Nigeria_GHS_W3_raw_data}\sect11l1_plantingw3.dta",clear 
 
 merge 1:1 hhid topic_cd using "${Nigeria_GHS_W3_raw_data}\secta5a_harvestw3.dta"
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 replace s11l1q1=1 if s11l1q1==. & sa5aq1==1
 ren s11l1q1 ext_acess 
 
@@ -529,7 +541,9 @@ use "${Nigeria_GHS_W3_raw_data}\sect1_plantingw3.dta",clear
 merge 1:1 hhid indiv using "${Nigeria_GHS_W3_raw_data}\sect2_harvestw3.dta", gen(household)
 
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W3_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 **************
 *market distance
 *************
@@ -676,7 +690,9 @@ save "${Nigeria_GHS_W3_created_data}\demographics_2015.dta", replace
 *Labor Age 
 *********************************
 use "${Nigeria_GHS_W3_raw_data}\sect1_plantingw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 *s1q6 age in years
 
 ren s1q6 hh_age
@@ -698,7 +714,9 @@ save "${Nigeria_GHS_W3_created_data}\laborage_2015.dta", replace
 ********************************
 
 use "${Nigeria_GHS_W3_raw_data}\sect14_harvestw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 *s14q1  1=received assistance 
 
 ren s14q1 safety_net 
@@ -865,7 +883,9 @@ save "${Nigeria_GHS_W3_created_data}\food_prices.dta", replace
 ***************
 use "${Nigeria_GHS_W3_raw_data}\sect7b_plantingw3.dta", clear
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W3_created_data}\food_prices.dta", keepusing (median_pr_ea median_pr_lga median_pr_state median_pr_zone maize_price_mr rice_price_mr)
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 
 
 
@@ -946,7 +966,9 @@ save "${Nigeria_GHS_W3_created_data}\food_prices_2015.dta", replace
 
 
 use "${Nigeria_GHS_W3_raw_data}\sect5_plantingw3.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 *s5q1 qty of items
 *s5q4 scrap value of item 
 
@@ -1094,7 +1116,9 @@ merge 1:1 hhid plotid using  "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3"
 *merging in harvest section to get areas for new plots
 merge 1:1 hhid plotid using "${Nigeria_GHS_W3_raw_data}\secta1_harvestw3.dta", gen(plot_merge)
 
- 
+ merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
+
+keep if ag_rainy_15==1
 ren s11aq4a area_size
 ren s11aq4b area_unit
 ren sa1q9a area_size2
@@ -1204,7 +1228,9 @@ keep zone state lga sector ea hhid plotid field_size
 
 merge 1:1 hhid plotid using "${Nigeria_GHS_W3_raw_data}\sect11b1_plantingw3.dta"
 
+merge m:1 hhid using "${Nigeria_GHS_W3_created_data}/ag_rainy_15.dta", gen(filter)
 
+keep if ag_rainy_15==1
 
 
 ren s11b1q45 soil_quality

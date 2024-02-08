@@ -19,12 +19,35 @@ global Nigeria_GHS_W4_created_data  "C:\Users\obine\Music\Documents\Smallholder 
 
 
 
+********************************************************************************
+* AG FILTER *
+********************************************************************************
+
+use "${Nigeria_GHS_W4_raw_data}/sect11a_plantingw4.dta" , clear
+
+keep hhid ag1
+rename (ag1) (ag_rainy_18)
+save  "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", replace
+
+
+
+*merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+*keep if ag_rainy_18==1
+
+
+
+
+
 
 ********************************************************************************
 * WEIGHTS *
 ********************************************************************************
 
 use "${Nigeria_GHS_W4_raw_data}/secta_plantingw4.dta" , clear
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
 gen rural = (sector==2)
 lab var rural "1= Rural"
 keep hhid zone state lga ea wt_wave4 rural
@@ -40,7 +63,9 @@ save  "${Nigeria_GHS_W4_created_data}/weight.dta", replace
 ************************
 
 use "${Nigeria_GHS_W4_raw_data}\nga_plotgeovariables_y4.dta", clear
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 
 encode srtmslp_nga, gen( plot_slope)
 ren srtm_nga  plot_elevation
@@ -66,7 +91,11 @@ save "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", replace
 *********************************************** 
 *Used Fertilizer
 ***********************************************
-use "${Nigeria_GHS_W4_raw_data}\secta11c2_harvestw4.dta",clear //plot level variables..... no question about agency where they purchased it
+use "${Nigeria_GHS_W4_raw_data}\secta11c2_harvestw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
+//plot level variables..... no question about agency where they purchased it
  
 
 *s11dq1a      1= if used fertilizer on plot
@@ -125,7 +154,11 @@ save "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta", replace
 *Purchased Fertilizer
 ***********************************************
 
-use "${Nigeria_GHS_W4_raw_data}\secta11c3_harvestw4.dta",clear    //household level variables......... distance to purchase was also asked
+use "${Nigeria_GHS_W4_raw_data}\secta11c3_harvestw4.dta",clear   
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
+ //household level variables......... distance to purchase was also asked
 
 *inputid  1= org fert| 2-4 inorg fert
 *s11c3q2  1= hhold purchased inputs
@@ -286,6 +319,9 @@ save "${Nigeria_GHS_W4_created_data}\purchased_fert_2018.dta", replace
 
 
 use "${Nigeria_GHS_W4_raw_data}\sect4a1_plantingw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
 
 *s4aq1 1= have a bank acccount
 *s4aq8 1= used commmercial bank savings
@@ -320,7 +356,9 @@ save "${Nigeria_GHS_W4_created_data}\savings_2018.dta", replace
 *******************************************************
 
 use "${Nigeria_GHS_W4_raw_data}\sect4c2_plantingw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 *s4cq2b   type of loan lenders (=<4 formal banks)
 *s4cq20   <=2 if loan was approved
  
@@ -353,7 +391,9 @@ save "${Nigeria_GHS_W4_created_data}\credit_access_2018.dta", replace
 
 
 use "${Nigeria_GHS_W4_raw_data}\sect11l1_plantingw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 
 ren s11l1q1 ext_acess 
 
@@ -424,7 +464,9 @@ merge 1:1 hhid indiv using "${Nigeria_GHS_W4_raw_data}\sect2_harvestw4.dta", gen
 
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W4_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 **************
 *market distance
 *************
@@ -569,7 +611,9 @@ save "${Nigeria_GHS_W4_created_data}\demographics_2018.dta", replace
 *Labor Age 
 *********************************
 use "${Nigeria_GHS_W4_raw_data}\sect1_plantingw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 ren s1q6 hh_age
 
 gen worker = 1
@@ -589,7 +633,9 @@ save "${Nigeria_GHS_W4_created_data}\laborage_2018.dta", replace
 ********************************
 
 use "${Nigeria_GHS_W4_raw_data}\sect14a_harvestw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 *s14q1a__1 1= received cash 
 *s14q1a__2 1= received food 
 *s14q1a__3 1= received other kinds
@@ -767,7 +813,9 @@ save "${Nigeria_GHS_W4_created_data}\food_prices.dta", replace
 ***************
 use "${Nigeria_GHS_W4_raw_data}\sect7b_plantingw4.dta", clear
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W4_created_data}\food_prices.dta", keepusing (median_pr_ea median_pr_lga median_pr_state median_pr_zone maize_price_mr rice_price_mr)
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 
 
 
@@ -834,7 +882,9 @@ save "${Nigeria_GHS_W4_created_data}\food_prices_2018.dta", replace
 
 
 use "${Nigeria_GHS_W4_raw_data}\sect5_plantingw4.dta",clear 
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 sort hhid item_cd
 
 *s5q1 qty of item
@@ -845,9 +895,9 @@ tab hhasset_value,missing
 sum hhasset_value,detail
 replace hhasset_value = 1000000 if hhasset_value > 2000000 & hhasset_value <.
 replace hhasset_value = 200 if hhasset_value <200
-
-
-************generating the mean vakue**************
+replace hhasset_value = 0 if hhasset_value ==.
+/*
+************generating the mean value**************
 
 egen mean_val_ea = mean(hhasset_value), by (ea)
 
@@ -897,6 +947,7 @@ tab hhasset_value,missing
 replace hhasset_value = mean_val_zone if hhasset_value ==. & num_val_pr_zone >= 309
 
 tab hhasset_value,missing
+*/
 
 sum hhasset_value, detail
 
@@ -926,7 +977,10 @@ use "${Nigeria_GHS_W4_raw_data}/sect11a1_plantingw4.dta", clear
 merge 1:1 hhid plotid using "${Nigeria_GHS_W4_raw_data}/sect11b1_plantingw4.dta", nogen
 *merging in harvest section to get areas for new plots
 merge 1:1 hhid plotid using "${Nigeria_GHS_W4_raw_data}/secta1_harvestw4.dta", gen(plot_merge)
- 
+ merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
+
 ren s11aq4aa area_size
 ren s11aq4b area_unit
 ren sa1q11 area_size2 //GPS measurement, no units in file
@@ -1040,7 +1094,9 @@ la var gps_meas "Plot was measured with GPS, 1=Yes"
 keep zone state lga sector ea hhid plotid field_size
 
 merge 1:1 hhid plotid using "${Nigeria_GHS_W4_raw_data}\sect11b1_plantingw4.dta"
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
+keep if ag_rainy_18==1
 
 ren s11b1q45 soil_quality
 tab soil_quality, missing
