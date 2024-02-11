@@ -324,7 +324,7 @@ merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
 merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
 keep if ag_rainy_20==1
-ren y5_hhid HHID
+
 ****************
 *organic fert variables
 ****************
@@ -493,10 +493,76 @@ tab org_fert,missing
 
 
 
-collapse (sum)  total_qty total_valuefert (max) dist_cens org_fert tpricefert_cens_mrk, by(HHID)
+collapse (sum)  total_qty total_valuefert (max) dist_cens org_fert tpricefert_cens_mrk, by(y5_hhid)
+
+merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
+
+merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+
+keep if ag_rainy_20==1
+
+
+
+
+
+************winzonrizing total_qty
+foreach v of varlist  total_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab total_qty
+tab total_qty_w, missing
+sum total_qty total_qty_w, detail
+
+
+
+
+************winzonrizing distance to market
+foreach v of varlist  dist_cens  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+tab dist_cens
+tab dist_cens_w, missing
+sum dist_cens dist_cens_w, detail
+
+
+************winzonrizing fertilizer market price
+foreach v of varlist  tpricefert_cens_mrk  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+tab tpricefert_cens_mrk
+sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
+
+
+
+
+
+ren y5_hhid HHID
+keep HHID org_fert dist_cens_w total_qty_w total_valuefert tpricefert_cens_mrk
+
+
+
+
 la var org_fert "1= if used organic fertilizer"
-la var dist_cens  "Distance travelled from plot to market in km"
-label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
+la var dist_cens_w  "Distance travelled from plot to market in km"
+label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
 label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort HHID
@@ -735,6 +801,22 @@ tab finish_pry if hh_b05==1 , missing
 tab finish_sec if hh_b05==1 , missing
 
 collapse (sum) num_mem  (max) weight hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
+
+
+tab attend_sch, missing
+tab pry_edu, missing
+tab finish_pry, missing
+tab finish_sec, missing
+egen mid_attend= median(attend_sch)
+egen mid_pry_edu= median(pry_edu)
+egen mid_finish_pry= median(finish_pry)
+egen mid_finish_sec= median(finish_sec)
+replace attend_sch = mid_attend if attend_sch==.
+replace pry_edu = mid_pry_edu if pry_edu==.
+replace finish_pry = mid_finish_pry if finish_pry==.
+replace finish_sec = mid_finish_sec if finish_sec==.
+
+
 la var num_mem  "household size"
 la var femhead "=1 if head is female"
 la var hh_headage_mrk "age of household head in years"
@@ -855,15 +937,17 @@ keep if ag_rainy_20==1
 gen hhasset_value = hh_m01*hh_m04
 tab hhasset_value
 sum hhasset_value,detail
+
+/*
 replace hhasset_value = 7200000  if hhasset_value > 7200000  & hhasset_value <. //bottom 4%
 replace hhasset_value = 3000 if hhasset_value <3000   //top 4%
 tab hhasset_value,missing
-
+*/
 collapse (sum) hhasset_value, by (y5_hhid)
 
-merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
+merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
 
-merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
 keep if ag_rainy_20==1
 
@@ -1032,8 +1116,23 @@ tab soil_qty_rev2, missing
 
 
 egen mid_soil = median(soil_qty_rev2)
-replace soil_qty_rev2 = mid_soil if soil_qty_rev2==.
+egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
+egen median_ward  = median(soil_qty_rev2), by (region district ward )
+egen median_district  = median(soil_qty_rev2), by (region district )
+egen median_region  = median(soil_qty_rev2), by (region )
 
+replace soil_qty_rev2 = median_ea_id if soil_qty_rev2==. 
+replace soil_qty_rev2 = median_ward if soil_qty_rev2==. 
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
+tab soil_qty_rev2,missing
+replace soil_qty_rev2 = median_region if soil_qty_rev2==.
+tab soil_qty_rev2,missing
+
+
+replace soil_qty_rev2= mid_soil if soil_qty_rev2==1.5
+replace soil_qty_rev2= mid_soil if soil_qty_rev2==2.5
+tab soil_qty_rev2,missing
 
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
@@ -1124,7 +1223,6 @@ tab plot_slope, missing
 
 
 
-
 collapse (mean) plot_slope , by (HHID)
 /*label define slope 1 "flat bottom" 2 "flat top" 3 "slightly sloped" 4 "very steep "
 label values slope plot_slope*/
@@ -1188,7 +1286,7 @@ save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
 
 
-tabstat total_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty_w dist_cens_w tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
@@ -1211,7 +1309,10 @@ save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\comple
 
 
 
-tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk worker real_maize_price_mr real_rice_price_mr real_hhvalue field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+
+
+
 
 misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2

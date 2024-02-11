@@ -150,6 +150,42 @@ tab subsidy_dummy, missing
 
 
 collapse (sum)subsidy_qty (max) subsidy_dummy, by (hhid)
+
+
+
+merge 1:1 hhid using  "${Nigeria_GHS_W2_created_data}/weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+
+************winzonrizing subsidy_qty
+foreach v of varlist  subsidy_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab subsidy_qty
+tab subsidy_qty_w, missing
+sum subsidy_qty subsidy_qty_w, detail
+
+
+
+
+
+
+
+keep hhid  subsidy_qty_w subsidy_dummy
+
+
+
+
+
+
+
 label var subsidy_qty "Quantity of Fertilizer Purchased in kg"
 label var subsidy_dummy "=1 if acquired any subsidied fertilizer"
 save "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", replace
@@ -277,10 +313,58 @@ tab org_fert, missing
 
 
 collapse (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(hhid)
+
+
+merge 1:1 hhid using  "${Nigeria_GHS_W2_created_data}/weight.dta", gen (wgt)
+merge m:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+
+
+
+************winzonrizing total_qty
+foreach v of varlist  total_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+
+tab total_qty
+tab total_qty_w, missing
+sum total_qty total_qty_w, detail
+
+
+/*
+
+************winzonrizing fertilizer market price
+foreach v of varlist  tpricefert_cens_mrk  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+*/
+
+gen real_tpricefert_cens_mrk = tpricefert_cens_mrk/0.5179256
+tab real_tpricefert_cens_mrk
+sum real_tpricefert_cens_mrk, detail
+
+
+keep hhid org_fert total_qty_w total_valuefert real_tpricefert_cens_mrk
+
+
+
 la var org_fert "1= if used organic fertilizer"
-label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
+label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
-label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
+label var real_tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort hhid
 save "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace
 
@@ -576,8 +660,52 @@ tab finish_pry if s1q3==1 , missing
 tab finish_sec if s1q3==1 , missing
 
 collapse (sum) num_mem (max) mrk_dist hh_headage femhead attend_sch pry_edu finish_pry finish_sec, by (hhid)
+
+merge 1:1 hhid using  "${Nigeria_GHS_W2_created_data}/weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+
+
+tab mrk_dist
+************winzonrizing distance to market
+foreach v of varlist  mrk_dist  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+tab mrk_dist
+tab mrk_dist_w, missing
+sum mrk_dist mrk_dist_w, detail
+
+
+keep hhid mrk_dist_w num_mem femhead hh_headage attend_sch pry_edu finish_pry finish_sec
+
+tab attend_sch, missing
+egen mid_attend= median(attend_sch)
+replace attend_sch = mid_attend if attend_sch==.
+
+tab pry_edu, missing
+tab finish_pry, missing
+tab finish_sec, missing
+
+egen mid_pry_edu= median(pry_edu)
+egen mid_finish_pry= median(finish_pry)
+egen mid_finish_sec= median(finish_sec)
+
+replace pry_edu = mid_pry_edu if pry_edu==.
+replace finish_pry = mid_finish_pry if finish_pry==.
+replace finish_sec = mid_finish_sec if finish_sec==.
+
+
+
 la var num_mem "household size"
-la var mrk_dist "distance to the nearest market in km"
+la var mrk_dist_w "distance to the nearest market in km"
 la var femhead "=1 if head is female"
 la var hh_headage "age of household head in years"
 la var attend_sch "=1 if respondent attended school"
@@ -835,10 +963,18 @@ replace net_buyer=0 if net_buyer==.
 tab net_buyer,missing
 
 collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(hhid)
+
+gen real_maize_price_mr = maize_price_mr/0.5179256
+tab real_maize_price_mr
+sum real_maize_price_mr, detail
+gen real_rice_price_mr = rice_price_mr/0.5179256
+tab real_rice_price_mr
+sum real_rice_price_mr, detail
+
 la var net_seller "1= if respondent is a net seller"
 la var net_buyer "1= if respondent is a net buyer"
-label var maize_price_mr "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
+label var real_maize_price_mr "commercial price of maize in naira"
+label var real_rice_price_mr "commercial price of rice in naira"
 sort hhid
 save "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta", replace
 
@@ -880,42 +1016,14 @@ tab hhasset_value
 
 replace hhasset_value=. if hhasset_value==0
 
-
+/*
 replace hhasset_value = 1000000 if hhasset_value > 1000000 & hhasset_value <.  //bottom 2%
 replace hhasset_value = 100 if hhasset_value <100  //top 2%
-
+*/
 
 sum hhasset_value, detail
 
 tab hhasset_value,missing
-
-egen median_hhasset_ea = median(hhasset), by (ea)
-egen median_hhasset_lga = median(hhasset), by (lga)
-egen median_hhasset_state = median(hhasset), by (state)
-egen median_hhasset_zone = median(hhasset), by (zone)
-
-egen num_hhasset_ea = count(hhasset), by (ea)
-egen num_hhasset_lga = count(hhasset), by (lga)
-egen num_hhasset_state = count(hhasset), by (state)
-egen num_hhasset_zone = count(hhasset), by (zone)
-
-tab num_hhasset_ea
-tab num_hhasset_lga
-tab num_hhasset_state
-tab num_hhasset_zone
-
-
-replace hhasset_value = median_hhasset_ea if hhasset_value==. & num_hhasset_ea>= 281
-tab hhasset_value, missing
-
-replace hhasset_value = median_hhasset_lga if hhasset_value==. & num_hhasset_lga>= 281
-tab hhasset_value, missing
-
-replace hhasset_value = median_hhasset_state if hhasset_value==. & num_hhasset_state>= 281
-tab hhasset_value, missing
-
-replace hhasset_value = median_hhasset_zone if hhasset_value==. & num_hhasset_zone>= 281
-tab hhasset_value, missing
 
 
 
@@ -923,7 +1031,42 @@ tab hhasset_value, missing
 
 collapse (sum) hhasset_value, by (hhid)
 
-la var hhasset_value "total value of household asset"
+
+merge 1:1 hhid using  "${Nigeria_GHS_W2_created_data}/weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+
+
+foreach v of varlist  hhasset_value  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+tab hhasset_value
+tab hhasset_value_w, missing
+sum hhasset_value hhasset_value_w, detail
+
+
+*Winzorized variables**
+
+*winsor2 hhasset_value, suffix(_s) cuts(5 95) 
+
+*summarize  hhasset_value_w hhasset_value_s , detail
+
+gen real_hhvalue = hhasset_value_w/0.5179256
+sum hhasset_value_w real_hhvalue, detail
+
+
+keep  hhid real_hhvalue
+
+
+la var real_hhvalue "total value of household asset"
 save "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta", replace
 
 
@@ -1042,8 +1185,30 @@ ren plotid plot_id
 sum field_size, detail
 *Total land holding including cultivated and rented out
 collapse (sum) field_size, by (hhid)
+
+merge 1:1 hhid using  "${Nigeria_GHS_W2_created_data}/weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}/ag_rainy_12.dta", gen(filter)
+
+keep if ag_rainy_12==1
+
+foreach v of varlist  field_size  {
+	_pctile `v' [aw=weight] , p(5 99) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top 5% & bottom 1%"
+}
+
+tab field_size
+tab field_size_w, missing
+sum field_size field_size_w, detail
+
+
+
 sort hhid
-ren field_size land_holding
+ren field_size_w land_holding
+keep hhid land_holding
 label var land_holding "land holding in hectares"
 save "${Nigeria_GHS_W2_created_data}\land_holding_2012.dta", replace
 
@@ -1142,8 +1307,22 @@ list hhid plotid  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup>
 
 egen med_soil = median(soil_qty_rev2)
 
+egen med_soil_ea = median(soil_qty_rev2), by (ea)
+egen med_soil_lga = median(soil_qty_rev2), by (lga)
+egen med_soil_state = median(soil_qty_rev2), by (state)
+egen med_soil_zone = median(soil_qty_rev2), by (zone)
 
-*replace soil_qty_rev2= med_soil if soil_qty_rev2==.
+replace soil_qty_rev2= med_soil_ea if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+replace soil_qty_rev2= med_soil_lga if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+replace soil_qty_rev2= med_soil_state if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+replace soil_qty_rev2= med_soil_zone if soil_qty_rev2==.
+tab soil_qty_rev2, missing
+
+
+replace soil_qty_rev2= med_soil if soil_qty_rev2==.
 tab soil_qty_rev2, missing
 
 la define soil 1 "Good" 2 "fair" 3 "poor"
@@ -1212,10 +1391,10 @@ save "${Nigeria_GHS_W2_created_data}\Nigeria_wave2_complete_data.dta.dta", repla
 
 
 
-tabstat total_qty subsidy_qty mrk_dist tpricefert_cens_mrk num_mem hh_headage worker maize_price_mr hhasset_value land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty_w subsidy_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh_headage real_hhvalue worker real_maize_price_mr real_rice_price_mr land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
-misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
-proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 
+misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
 

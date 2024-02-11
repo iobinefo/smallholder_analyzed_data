@@ -202,8 +202,27 @@ tab rice_price_mr,missing
 
 ren y4_hhid HHID
 collapse  (max) maize_price_mr rice_price_mr, by(HHID)
-label var maize_price_mr "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
+
+
+gen real_maize_price_mr = maize_price_mr/0.7730376
+tab real_maize_price_mr
+sum real_maize_price_mr, detail
+gen real_rice_price_mr = rice_price_mr/0.7730376
+tab real_rice_price_mr
+sum real_rice_price_mr, detail
+
+
+
+
+
+
+
+
+
+
+keep HHID real_maize_price_mr real_rice_price_mr
+label var real_maize_price_mr "commercial price of maize in naira"
+label var real_rice_price_mr "commercial price of rice in naira"
 save "${tza_GHS_W4_created_data}\food_prices_2014.dta", replace
 
 
@@ -242,7 +261,7 @@ merge 1:1 y4_hhid plotnum using "${tza_GHS_W4_raw_data }\ag_sec_3b.dta"
 merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
 
 keep if ag_rainy_14==1
-ren y4_hhid HHID
+
 ****************
 *organic fert variables
 ****************
@@ -301,9 +320,36 @@ tab org_fert, missing
 replace org_fert =0 if org_fert==.
 tab org_fert,missing
 
-collapse (sum) subsidy_qty (max) org_fert subsidy_dummy, by (HHID)
+collapse (sum) subsidy_qty (max) org_fert subsidy_dummy, by (y4_hhid)
+
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
+
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
+tab subsidy_qty, missing
+
+
+************winzonrizing subsidy_qty
+foreach v of varlist  subsidy_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab subsidy_qty
+tab subsidy_qty_w, missing
+sum subsidy_qty subsidy_qty_w, detail
+
+
+
+
+ren y4_hhid HHID
 la var org_fert "1= if used organic fertilizer"
-label var subsidy_qty "Quantity of Fertilizer Purchased with voucher in kg"
+label var subsidy_qty_w "Quantity of Fertilizer Purchased with voucher in kg"
 label var subsidy_dummy "=1 if acquired any fertilizer using voucher"
 save "${tza_GHS_W4_created_data}\subsidized_fert_2014.dta", replace
 
@@ -351,7 +397,7 @@ merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter
 
 keep if ag_rainy_14==1
 
-ren y4_hhid HHID
+
 
 
 ****************
@@ -506,11 +552,75 @@ tab tpricefert_cens_mrk,missing
 
 
 
-collapse (sum)  total_qty total_valuefert  (max) dist_cens tpricefert_cens_mrk, by(HHID)
-la var dist_cens "Distance travelled from plot to market in km"
-label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
+collapse (sum)  total_qty total_valuefert  (max) dist_cens tpricefert_cens_mrk, by(y4_hhid)
+
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
+
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+
+keep if ag_rainy_14==1
+
+
+
+
+
+************winzonrizing total_qty
+foreach v of varlist  total_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab total_qty
+tab total_qty_w, missing
+sum total_qty total_qty_w, detail
+
+
+
+
+************winzonrizing distance to market
+foreach v of varlist  dist_cens  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+tab dist_cens
+tab dist_cens_w, missing
+sum dist_cens dist_cens_w, detail
+
+
+************winzonrizing fertilizer market price
+foreach v of varlist  tpricefert_cens_mrk  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+tab tpricefert_cens_mrk
+sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
+gen real_tpricefert_cens_mrk = tpricefert_cens_mrk_w/0.7730376
+tab real_tpricefert_cens_mrk, missing
+sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
+
+
+
+
+ren y4_hhid HHID
+keep HHID dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
+la var dist_cens_w "Distance travelled from plot to market in km"
+label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
-label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
+label var real_tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort HHID
 save "${tza_GHS_W4_created_data}\commercial_fert_2014.dta", replace
 
@@ -745,6 +855,23 @@ tab finish_pry if hh_b05==1 , missing
 tab finish_sec if hh_b05==1 , missing
 
 collapse (sum) num_mem  (max) weight hh_headage_mrk femhead attend_sch pry_edu finish_pry finish_sec, by (HHID)
+
+
+tab attend_sch, missing
+tab pry_edu, missing
+tab finish_pry, missing
+tab finish_sec, missing
+egen mid_attend= median(attend_sch)
+egen mid_pry_edu= median(pry_edu)
+egen mid_finish_pry= median(finish_pry)
+egen mid_finish_sec= median(finish_sec)
+replace attend_sch = mid_attend if attend_sch==.
+replace pry_edu = mid_pry_edu if pry_edu==.
+replace finish_pry = mid_finish_pry if finish_pry==.
+replace finish_sec = mid_finish_sec if finish_sec==.
+
+
+
 la var num_mem  "household size"
 la var femhead "=1 if head is female"
 la var hh_headage_mrk "age of household head in years"
@@ -862,16 +989,16 @@ keep if ag_rainy_14==1
 gen hhasset_value = hh_m01*hh_m04
 tab hhasset_value
 sum hhasset_value,detail
-
+/*
 replace hhasset_value = 7200000  if hhasset_value > 7200000  & hhasset_value <. //bottom 3%
 replace hhasset_value = 2000 if hhasset_value <2000   //top 3%
-tab hhasset_value,missing
+tab hhasset_value,missing*/
 
 
 collapse (sum) hhasset_value, by (y4_hhid)
-merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
-merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
 
 keep if ag_rainy_14==1
 
@@ -889,15 +1016,19 @@ tab hhasset_value_w, missing
 sum hhasset_value hhasset_value_w, detail
 
 
+replace hhasset_value_w =0 if hhasset_value_w==.
 
+gen real_hhvalue = hhasset_value_w/0.7730376
+sum hhasset_value_w real_hhvalue, detail
 
 
 
 
 ren y4_hhid HHID
 
-keep HHID hhasset_value hhasset_value_w
-la var hhasset_value "total value of household asset"
+
+keep HHID real_hhvalue
+la var real_hhvalue "total value of household asset"
 save "${tza_GHS_W4_created_data}\hhasset_value_2014.dta", replace
 
 
@@ -1060,7 +1191,7 @@ list HHID plotnum  field_size soil_quality soil_qty_rev soil_qty_rev2 dup if dup
 tab soil_qty_rev2, missing
 
 
-/*
+egen mid_soil = median(soil_qty_rev2)
 
 egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
 egen median_ward  = median(soil_qty_rev2), by (region district ward )
@@ -1075,13 +1206,9 @@ tab soil_qty_rev2,missing
 replace soil_qty_rev2 = median_region if soil_qty_rev2==.
 tab soil_qty_rev2,missing
 
-
-
-replace soil_qty_rev2 =2 if soil_qty_rev2==1.5
-replace soil_qty_rev2 =3 if soil_qty_rev2==2.5
-tab soil_qty_rev2,missing*/
-
-
+replace soil_qty_rev2= mid_soil if soil_qty_rev2==1.5
+replace soil_qty_rev2= mid_soil if soil_qty_rev2==2.5
+tab soil_qty_rev2,missing
 collapse (mean) soil_qty_rev2 , by (HHID)
 la define soil 1 "Good" 2 "fair" 3 "poor"
 la value soil soil_qty_rev2
@@ -1244,7 +1371,7 @@ save "${tza_GHS_W4_created_data}\tanzania_wave4_completedata_2014.dta", replace
 
 
 
-tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk worker real_maize_price_mr real_rice_price_mr real_hhvalue field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2

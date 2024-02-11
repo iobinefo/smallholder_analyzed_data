@@ -93,7 +93,7 @@ merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter
 keep if ag_rainy_10==1
 
 *distinct HHID if ag_rainy_10==1
-ren y2_hhid HHID
+
 ****************
 *organic fert variables
 ****************
@@ -148,9 +148,32 @@ replace org_fert =0 if org_fert==.
 tab org_fert,missing
 
 
-collapse (sum)subsidy_qty (max) org_fert subsidy_dummy, by (HHID)
+collapse (sum)subsidy_qty (max) org_fert subsidy_dummy, by (y2_hhid)
+
+
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
+************winzonrizing total_qty
+foreach v of varlist  subsidy_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab subsidy_qty
+tab subsidy_qty_w, missing
+sum subsidy_qty subsidy_qty_w, detail
+
+ren y2_hhid HHID
+
+keep HHID org_fert subsidy_qty_w subsidy_dummy
 la var org_fert "1= if used organic fertilizer"
-label var subsidy_qty "Quantity of Fertilizer Purchased with voucher in kg"
+label var subsidy_qty_w "Quantity of Fertilizer Purchased with voucher in kg"
 label var subsidy_dummy "=1 if acquired any fertilizer using voucher"
 save "${tza_GHS_W2_created_data}\subsidized_fert_2010.dta", replace
 
@@ -193,7 +216,6 @@ merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta",gen (hhids)
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
 keep if ag_rainy_10==1
-ren y2_hhid HHID
 
 
 
@@ -341,11 +363,86 @@ tab tpricefert_cens_mrk,missing
 
 
 
-collapse (sum)  total_qty  total_valuefert (max) dist_cens tpricefert_cens_mrk, by(HHID)
-la var dist_cens  "Distance from plot to market in km"
-label var total_qty "Total quantity of Commercial Fertilizer Purchased in kg"
+collapse (sum)  total_qty  total_valuefert (max) dist_cens tpricefert_cens_mrk, by(y2_hhid)
+
+tab total_qty, missing
+tab dist_cens, missing
+tab tpricefert_cens_mrk, missing
+
+
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
+merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
+
+keep if ag_rainy_10==1
+
+
+************winzonrizing total_qty
+foreach v of varlist  total_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+
+tab total_qty
+tab total_qty_w, missing
+sum total_qty total_qty_w, detail
+
+
+************winzonrizing distance to market
+foreach v of varlist  dist_cens  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+tab dist_cens
+tab dist_cens_w, missing
+sum dist_cens dist_cens_w, detail
+
+************winzonrizing fertilizer market price
+foreach v of varlist  tpricefert_cens_mrk  {
+	_pctile `v' [aw=weight] , p(5 95) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
+gen real_tpricefert_cens_mrk = tpricefert_cens_mrk_w/0.5165365
+tab real_tpricefert_cens_mrk, missing
+sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
+
+ren y2_hhid HHID
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+keep HHID dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
+
+la var dist_cens_w  "Distance from plot to market in km"
+label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
-label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
+label var real_tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort HHID
 save "${tza_GHS_W2_created_data}\commercial_fert_2010.dta", replace
 
@@ -841,8 +938,17 @@ tab rice_price_mr,missing
 
 ren y2_hhid HHID
 collapse  (max) maize_price_mr rice_price_mr, by(HHID)
-label var maize_price_mr"commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
+
+gen real_maize_price_mr = maize_price_mr/0.5165365
+tab real_maize_price_mr
+sum real_maize_price_mr, detail
+gen real_rice_price_mr = rice_price_mr/0.5165365
+tab real_rice_price_mr
+sum real_rice_price_mr, detail
+
+keep HHID real_maize_price_mr real_rice_price_mr
+label var real_maize_price_mr"commercial price of maize in naira"
+label var real_rice_price_mr "commercial price of rice in naira"
 
 sort HHID
 save "${tza_GHS_W2_created_data}\food_prices_2010.dta", replace
@@ -894,6 +1000,51 @@ sort HHID
 save "${tza_GHS_W2_created_data}\net_buyer_seller_2010.dta", replace
 
 
+************************************
+*cpi
+********************************
+  wbopendata, language(en - English) country() topics() indicator(fp.cpi.totl) clear
+*save a copy for use off-line
+  *save "wbopendata_cpi_timeseries.dta", replace
+
+*use "wbopendata_cpi_timeseries.dta", clear
+
+*keep SSA
+keep if inlist(region,"SSF")
+	*does the same thing: keep if regioncode=="SSF"
+
+*keep our study countries
+keep if inlist(countrycode,"TZA")
+	* does the same thing: drop if !(inlist(countrycode,"TZA"))
+
+
+*drop very old years
+drop yr1960-yr1989
+
+*take a look at recent values (note these all use 2010 as base year)
+l countrycode yr2004-yr2017
+
+*rebase to 2015
+gen baseyear = yr2020
+forvalues i=1990(1)2022 {
+	replace yr`i' = yr`i'/baseyear
+}
+forvalues i=1990(1)2022 {
+	di "year is: `i'" 
+}
+
+
+*reformat to match panel structure 
+reshape long yr, i(countrycode) j(year)
+rename yr cpi
+keep countrycode countryname year cpi
+order countrycode countryname year cpi
+la var year "Year"
+la var cpi "CPI (base=2020)"
+
+
+*save for use in analysis
+*save "tza_cpi_b2019.dta", replace
 
 
 
@@ -915,51 +1066,7 @@ keep if ag_rainy_10==1
 gen hhasset_value = ag11_01*ag11_02
 tab hhasset_value,missing
 sum hhasset_value,detail
-/*
-replace hhasset_value = 1440000  if hhasset_value > 1440000  & hhasset_value <.
-replace hhasset_value = 2000 if hhasset_value <2000
-tab hhasset_value, missing
 
-************generating the mean vakue**************
-egen mean_val_ea_id = mean(hhasset_value), by (ea)
-egen mean_val_region = mean(hhasset_value), by (region)
-egen mean_val_stratum  = mean(hhasset_value), by (strataid )
-egen mean_val_district  = mean(hhasset_value), by (district )
-
-
-
-
-egen num_val_ea_id = count(hhasset_value), by (ea)
-egen num_val_region = count(hhasset_value), by (region)
-egen num_val_stratum  = count(hhasset_value), by (strataid )
-egen num_val_district  = count(hhasset_value), by (district )
-
-
-
-
-tab num_val_ea_id
-tab num_val_region
-tab num_val_stratum
-tab num_val_district
-
-
-
-
-
-
-replace hhasset_value = mean_val_ea_id if hhasset_value ==. & num_val_ea_id >= 260
-tab hhasset_value,missing
-replace hhasset_value = mean_val_region if hhasset_value ==. & num_val_region >= 260
-tab hhasset_value,missing
-replace hhasset_value = mean_val_stratum if hhasset_value ==. & num_val_stratum >= 260
-tab hhasset_value,missing
-replace hhasset_value = mean_val_district if hhasset_value ==. & num_val_district >= 260
-tab hhasset_value,missing
-
-egen mid_asset = median(hhasset_value)
-replace hhasset_value= mid_asset if hhasset_value==.
-tab hhasset_value,missing
-*/
 
 
 collapse (sum) hhasset_value, by (y2_hhid)
@@ -982,9 +1089,19 @@ tab hhasset_value
 tab hhasset_value_w, missing
 sum hhasset_value hhasset_value_w, detail
 
+
+*Winzorized variables**
+
+*winsor2 hhasset_value, suffix(_s) cuts(5 95) 
+
+*summarize  hhasset_value_w hhasset_value_s , detail
+
+gen real_hhvalue = hhasset_value_w/0.5165365
+sum hhasset_value_w real_hhvalue, detail
+
 ren y2_hhid HHID
-keep HHID hhasset_value hhasset_value_w
-la var hhasset_value "total value of household asset"
+keep HHID  real_hhvalue
+la var real_hhvalue "total value of household asset"
 save "${tza_GHS_W2_created_data}\hhasset_value_2010.dta", replace
 
 
@@ -1034,13 +1151,15 @@ merge 1:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
 merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
 
 keep if ag_rainy_10==1
+
+
 foreach v of varlist  field_size_ha  {
-	_pctile `v' [aw=weight] , p(5 95) 
+	_pctile `v' [aw=weight] , p(5 99) 
 	gen `v'_w=`v'
 	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
 	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
 	local l`v' : var lab `v'
-	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+	lab var  `v'_w  "`l`v'' - Winzorized top 5% & bottom 1%"
 }
 
 tab field_size_ha
@@ -1132,7 +1251,7 @@ tab soil_qty_rev2, missing
 egen med_soil = median(soil_qty_rev2)
 replace soil_qty_rev2 = med_soil if soil_qty_rev2==.
 
-/* should i give them the median?
+
 
 egen median_ea_id = median(soil_qty_rev2), by (region district ward ea)
 egen median_ward  = median(soil_qty_rev2), by (region district ward )
@@ -1145,7 +1264,7 @@ tab soil_qty_rev2,missing
 replace soil_qty_rev2 = median_district if soil_qty_rev2==.  
 tab soil_qty_rev2,missing
 replace soil_qty_rev2 = median_region if soil_qty_rev2==.
-tab soil_qty_rev2,missing*/
+tab soil_qty_rev2,missing
 
 
 
@@ -1158,61 +1277,7 @@ la var soil_qty_rev2 "1=Good 2= Average 3=Bad "
 save "${tza_GHS_W2_created_data}\soil_quality_2010.dta", replace
 
 						
- /*********************************************************************************
-* PLOT AREAS *
-********************************************************************************
-
-use "${tza_GHS_W2_raw_data}\AG_SEC2A.dta",clear 
-merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\hhids.dta", gen(hhids)
-merge m:1 y2_hhid using "${tza_GHS_W2_created_data}\ag_rainy_10.dta", gen(filter)
-
-keep if ag_rainy_10==1
-*append using "${tza_GHS_W2_raw_data}\AG_SEC2B.dta", gen(short)
-ren plotnum plot_id
-gen area_acres_est = ag2a_04
-*replace area_acres_est = ag2b_15 if area_acres_est==.
-gen area_acres_meas = ag2a_09
-*replace area_acres_meas = ag2b_20 if area_acres_meas==.
-
-gen field_size = area_acres_meas
-
-tab field_size, missing
-tab area_acres_est,missing
-replace field_size = area_acres_est  if field_size==.  
-tab field_size, missing
-
-sum field_size, detail
-*replace field_size = 0.52 if field_size==.
-*tab field_size, missing
-
-
-**************Top 95% is 4 hectares
-gen field_size_ha = field_size* (1/2.47105)
-tab field_size_ha, missing
-
-
-foreach v of varlist  field_size_ha  {
-	_pctile `v' [aw=weight] , p(1 99) 
-	gen `v'_w=`v'
-	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
-	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
-	local l`v' : var lab `v'
-	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
-}
-
-tab field_size_ha
-tab field_size_ha_w
-sum field_size_ha field_size_ha_w, detail
-
-
-_pctile field_size_ha  [aw=weight] , p($wins_upper_thres) 
-gen w_field_size_ha=field_size_ha
-tab w_field_size_ha, missing
-replace w_field_size_ha = r(r1) if w_field_size_ha > r(r1) & w_field_size_ha != . 
-lab var w_field_size_ha "plot_size - Winsorized top 1%"
-
-*/
-
+ 
 
 ************************* Merging Agricultural Datasets ********************
 
@@ -1257,7 +1322,7 @@ save "${tza_GHS_W2_created_data}\tanzania_wave2_completedata_2010.dta", replace
 
 
 
-tabstat total_qty subsidy_qty dist_cens tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk worker real_maize_price_mr real_rice_price_mr real_hhvalue field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
 misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
