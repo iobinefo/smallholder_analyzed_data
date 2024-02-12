@@ -1494,6 +1494,7 @@ gen year = 2015
 sort hhid
 save "${Nigeria_GHS_W3_created_data}\Nigeria_wave3_completedata_2015.dta", replace
 
+
 tabstat total_qty_w subsidy_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh_headage real_hhvalue worker real_maize_price_mr real_rice_price_mr land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 

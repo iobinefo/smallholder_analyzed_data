@@ -999,7 +999,7 @@ la var net_buyer "1= if respondent is a net buyer"
 sort HHID
 save "${tza_GHS_W2_created_data}\net_buyer_seller_2010.dta", replace
 
-
+/*
 ************************************
 *cpi
 ********************************
@@ -1045,7 +1045,7 @@ la var cpi "CPI (base=2020)"
 
 *save for use in analysis
 *save "tza_cpi_b2019.dta", replace
-
+*/
 
 
 
@@ -1154,7 +1154,7 @@ keep if ag_rainy_10==1
 
 
 foreach v of varlist  field_size_ha  {
-	_pctile `v' [aw=weight] , p(5 99) 
+	_pctile `v' [aw=weight] , p(5 95) 
 	gen `v'_w=`v'
 	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
 	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
@@ -1170,7 +1170,7 @@ ren y2_hhid HHID
 sort HHID
 
 keep HHID field_size_ha field_size_ha_w
-label var field_size_ha "land holding measured using gps in hectares"
+label var field_size_ha_w "land holding measured using gps in hectares"
 save "${tza_GHS_W2_created_data}\land_holding_2010.dta", replace
 
 
@@ -1286,29 +1286,41 @@ use "${tza_GHS_W2_created_data}\commercial_fert_2010.dta", replace
 
 *******All observations Merged*****
 
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\subsidized_fert_2010.dta", gen (subsidized)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\subsidized_fert_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\savings_2010.dta", gen (savings)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\savings_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\credit_access_2010.dta", gen (credit)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\credit_access_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\Extension_access_2010.dta", gen (extension)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\Extension_access_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\demographics_2010.dta", gen (demographics)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\demographics_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\labor_age_2010.dta", gen (labor)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\labor_age_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\safety_net_2010.dta", gen (safety)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\safety_net_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\food_prices_2010.dta", gen (foodprices)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\food_prices_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\net_buyer_seller_2010.dta", gen (net)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\net_buyer_seller_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\soil_quality_2010.dta", gen (soil)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\soil_quality_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\geodata_2010.dta", gen (geodata)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\geodata_2010.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W2_created_data}\hhasset_value_2010.dta", gen (hhasset)
+merge 1:1 HHID using "${tza_GHS_W2_created_data}\hhasset_value_2010.dta"
+drop _merge
 sort HHID
 merge 1:1 HHID using "${tza_GHS_W2_created_data}\land_holding_2010.dta"
 gen year = 2010

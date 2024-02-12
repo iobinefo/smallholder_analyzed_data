@@ -348,6 +348,7 @@ sum subsidy_qty subsidy_qty_w, detail
 
 
 ren y4_hhid HHID
+keep HHID org_fert subsidy_qty_w subsidy_dummy
 la var org_fert "1= if used organic fertilizer"
 label var subsidy_qty_w "Quantity of Fertilizer Purchased with voucher in kg"
 label var subsidy_dummy "=1 if acquired any fertilizer using voucher"
@@ -1076,9 +1077,9 @@ tab field_size_ha, missing
 
 collapse (sum) field_size_ha , by (y4_hhid)
 
-merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta", gen(hhids)
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta", gen(hhids)
 
-merge m:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
+merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\ag_rainy_14.dta", gen(filter)
 
 keep if ag_rainy_14==1
 
@@ -1100,7 +1101,7 @@ sum field_size_ha field_size_ha_w, detail
 ren y4_hhid HHID
 sort HHID
 keep HHID field_size_ha field_size_ha_w
-label var field_size_ha "land holding measured using gps in hectares"
+label var field_size_ha_w "land holding measured using gps in hectares"
 save "${tza_GHS_W4_created_data}\land_holding_2014.dta", replace
 
 
@@ -1339,31 +1340,44 @@ use "${tza_GHS_W4_created_data}\commercial_fert_2014.dta", replace
 
 *******All observations Merged*****
 
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\subsidized_fert_2014.dta", gen (subsidized)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\subsidized_fert_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\savings_2014.dta", gen (savings)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\savings_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\credit_access_2014.dta", gen (credit)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\credit_access_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\Extension_access_2014.dta", gen (extension)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\Extension_access_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\demographics_2014.dta", gen (demographics)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\demographics_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\labor_age_2014.dta", gen (labor)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\labor_age_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\safety_net_2014.dta", gen (safety)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\safety_net_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\food_prices_2014.dta", gen (foodprices)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\food_prices_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\net_buyer_seller_2014.dta", gen (net)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\net_buyer_seller_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\soil_quality_2014.dta", gen (soil)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\soil_quality_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\geodata_2014.dta", gen (geodata)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\geodata_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\hhasset_value_2014.dta", gen (hhasset)
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\hhasset_value_2014.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W4_created_data}\land_holding_2014.dta", nogen
+merge 1:1 HHID using "${tza_GHS_W4_created_data}\land_holding_2014.dta"
+drop _merge
 
 gen year = 2014
 sort HHID

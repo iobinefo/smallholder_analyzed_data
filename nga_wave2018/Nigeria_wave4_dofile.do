@@ -1342,11 +1342,12 @@ sort hhid
 save "${Nigeria_GHS_W4_created_data}\Nigeria_wave4_completedata_2018.dta", replace
 
 
+
 tabstat total_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh_headage real_hhvalue worker real_maize_price_mr real_rice_price_mr land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
-misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
-proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
+misstable summarize femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 
 
 
@@ -1359,13 +1360,14 @@ use "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wav
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\Nigeria_wave2_complete_data.dta.dta" 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2015\Nigeria_wave3_completedata_2015.dta" 
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2018\Nigeria_wave4_completedata_2018.dta"
-
+/*
 egen fert_distance = median( dist_cens_mrk), by (hhid)
 replace dist_cens_mrk = fert_distance if dist_cens_mrk==.
-
+*/
 order year
 
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Nigeria_complete_data.dta", replace
+
 
 
 
@@ -1382,7 +1384,7 @@ tabstat total_qty_w subsidy_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh
 
 
 misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
-proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 
 
 

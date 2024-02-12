@@ -272,10 +272,24 @@ tab rice_price_mr,missing
 
 
 
+
+
 ren y5_hhid HHID
 collapse  (max) maize_price_mr rice_price_mr, by(HHID)
-label var maize_price_mr "commercial price of maize in naira"
-label var rice_price_mr "commercial price of rice in naira"
+
+
+
+gen real_maize_price_mr = maize_price_mr
+tab real_maize_price_mr
+sum real_maize_price_mr, detail
+gen real_rice_price_mr = rice_price_mr
+tab real_rice_price_mr
+sum real_rice_price_mr, detail
+
+
+keep HHID real_maize_price_mr real_rice_price_mr
+label var real_maize_price_mr "commercial price of maize in naira"
+label var real_rice_price_mr "commercial price of rice in naira"
 save "${tza_GHS_W5_created_data}\food_prices_2020.dta", replace
 
 
@@ -549,13 +563,15 @@ foreach v of varlist  tpricefert_cens_mrk  {
 }
 tab tpricefert_cens_mrk
 sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
-
+gen real_tpricefert_cens_mrk = tpricefert_cens_mrk_w
+tab real_tpricefert_cens_mrk, missing
+sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
 
 
 
 
 ren y5_hhid HHID
-keep HHID org_fert dist_cens_w total_qty_w total_valuefert tpricefert_cens_mrk
+keep HHID org_fert dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
 
 
 
@@ -564,7 +580,7 @@ la var org_fert "1= if used organic fertilizer"
 la var dist_cens_w  "Distance travelled from plot to market in km"
 label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
-label var tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
+label var real_tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort HHID
 save "${tza_GHS_W5_created_data}\commercial_fert_2020.dta", replace
 
@@ -964,13 +980,18 @@ tab hhasset_value
 tab hhasset_value_w, missing
 sum hhasset_value hhasset_value_w, detail
 
+replace hhasset_value_w =0 if hhasset_value_w==.
+
+gen real_hhvalue = hhasset_value_w
+sum hhasset_value_w real_hhvalue, detail
+
 
 
 
 ren y5_hhid HHID
 
-keep HHID hhasset_value hhasset_value_w
-la var hhasset_value "total value of household asset"
+keep HHID real_hhvalue
+la var real_hhvalue "total value of household asset"
 save "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", replace
 
 
@@ -1009,8 +1030,8 @@ tab field_size_ha, missing
 
 collapse (sum) field_size_ha , by (y5_hhid)
 
-merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
-merge m:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
+merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta", gen(hhids)
+merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\ag_rainy_20.dta", gen(filter)
 
 keep if ag_rainy_20==1
 
@@ -1035,7 +1056,7 @@ sum field_size_ha field_size_ha_w, detail
 ren y5_hhid HHID
 sort HHID
 keep HHID field_size_ha field_size_ha_w
-label var field_size_ha "land holding measured using gps in hectares"
+label var field_size_ha_w "land holding measured using gps in hectares"
 save "${tza_GHS_W5_created_data}\land_holding_2020.dta", replace
 
 
@@ -1254,29 +1275,41 @@ use "${tza_GHS_W5_created_data}\commercial_fert_2020.dta", replace
 
 *******All observations Merged*****
 
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\savings_2020.dta", gen (savings)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\savings_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\credit_access_2020.dta", gen (credit)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\credit_access_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\Extension_access_2020.dta", gen (extension)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\Extension_access_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\demographics_2020.dta", gen (demographics)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\demographics_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\labor_age_2020.dta", gen (labor)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\labor_age_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\safety_net_2020.dta", gen (safety)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\safety_net_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\food_prices_2020.dta", gen (foodprices)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\food_prices_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\net_buyer_seller_2020.dta", gen (net)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\net_buyer_seller_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\soil_quality_2020.dta", gen (soil)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\soil_quality_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\geodata_2020.dta", gen (geodata)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\geodata_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\hhasset_value_2020.dta", gen (hhasset)
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\hhasset_value_2020.dta"
+drop _merge
 sort HHID
-merge 1:1 HHID using "${tza_GHS_W5_created_data}\land_holding_2020.dta", nogen
+merge 1:1 HHID using "${tza_GHS_W5_created_data}\land_holding_2020.dta"
+drop _merge
 
 gen year = 2020
 sort HHID
@@ -1286,7 +1319,8 @@ save "${tza_GHS_W5_created_data}\tanzania_wave5_completedata_2020.dta", replace
 
 
 
-tabstat total_qty_w dist_cens_w tpricefert_cens_mrk num_mem hh_headage_mrk worker maize_price_mr rice_price_mr hhasset_value_w field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+
+tabstat total_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk worker real_maize_price_mr real_rice_price_mr real_hhvalue field_size_ha_w [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2

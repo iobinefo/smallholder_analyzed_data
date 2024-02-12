@@ -962,7 +962,7 @@ la var net_buyer "1= if respondent is a net buyer"
 sort hhid
 save "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", replace
 
-
+/*
 
 
 ************************************
@@ -1012,7 +1012,7 @@ la var cpi "CPI (base=2018)"
 *save "tza_cpi_b2019.dta", replace
 
 
-
+*/
 
 
 
@@ -1318,8 +1318,9 @@ merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", gen 
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\geodata.dta", gen (geodata)
 sort hhid
-*merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta", gen(soil)
-*sort hhid
+merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta", gen(soil)
+drop if soil==2
+sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\land_holdings.dta"
 gen year = 2010
 sort hhid
@@ -1333,4 +1334,4 @@ tabstat total_qty_w subsidy_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh
 *soil_qty_rev2 soil_qty_rev2 hhasset_value
 
 misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
-proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
