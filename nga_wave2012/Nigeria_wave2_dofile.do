@@ -312,7 +312,7 @@ tab org_fert, missing
 
 
 
-collapse (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(hhid)
+collapse zone (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(hhid)
 
 
 merge 1:1 hhid using  "${Nigeria_GHS_W2_created_data}/weight.dta", gen (wgt)
@@ -353,12 +353,12 @@ foreach v of varlist  tpricefert_cens_mrk  {
 */
 
 gen rea_tpricefert_cens_mrk = tpricefert_cens_mrk/0.5179256
-gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk/359
+gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk
 tab real_tpricefert_cens_mrk
 sum real_tpricefert_cens_mrk, detail
 
 
-keep hhid org_fert total_qty_w total_valuefert real_tpricefert_cens_mrk
+keep hhid zone org_fert total_qty_w total_valuefert real_tpricefert_cens_mrk
 
 
 
@@ -966,11 +966,11 @@ tab net_buyer,missing
 collapse  (max) net_seller net_buyer maize_price_mr rice_price_mr, by(hhid)
 
 gen rea_maize_price_mr = maize_price_mr/0.5179256
-gen real_maize_price_mr = rea_maize_price_mr/359
+gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
 sum real_maize_price_mr, detail
 gen rea_rice_price_mr = rice_price_mr/0.5179256
-gen real_rice_price_mr = rea_rice_price_mr/359
+gen real_rice_price_mr = rea_rice_price_mr
 tab real_rice_price_mr
 sum real_rice_price_mr, detail
 
@@ -1063,7 +1063,7 @@ sum hhasset_value hhasset_value_w, detail
 *summarize  hhasset_value_w hhasset_value_s , detail
 
 gen rea_hhvalue = hhasset_value_w/0.5179256
-gen real_hhvalue = rea_hhvalue/359
+gen real_hhvalue = rea_hhvalue/1000
 sum hhasset_value_w real_hhvalue, detail
 
 
@@ -1364,31 +1364,44 @@ use "${Nigeria_GHS_W2_created_data}\purchased_fert_2012.dta", replace
 *******All observations Merged*****
 
 
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta", gen (subsidized)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\subsidized_fert_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\weight.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\savings_2012.dta", gen (savings)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\savings_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\credit_2012.dta", gen (credit)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\credit_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\extension_visit_2012.dta", gen (extension)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\extension_visit_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\demographics_2012.dta", gen (demographics)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\demographics_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta", gen (labor)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\labor_age_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta", gen (safety)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\safety_net_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta", gen (foodprices)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\food_prices_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\geodata_2012.dta", gen (geodata)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\geodata_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta", gen (soil)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\soil_quality_2012.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta", gen (asset)
+merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\asset_value_2012.dta"
+drop _merge
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W2_created_data}\land_holding_2012.dta"
+drop _merge
 gen year = 2012
 sort hhid
 save "${Nigeria_GHS_W2_created_data}\Nigeria_wave2_complete_data.dta.dta", replace

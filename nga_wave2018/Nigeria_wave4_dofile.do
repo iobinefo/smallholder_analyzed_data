@@ -121,18 +121,18 @@ keep if ag_rainy_18==1
 
 *****Coversion of fertilizer's units into kilogram using 
 
-gen fert1 = s11c2q37a*s11c2q37a_conv 
-gen fert2 = s11c2q38a*s11c2q38a_conv
-gen fert3 = s11c2q39a*s11c2q39a_conv
+gen fert1 = s11c2q37a*s11c2q37a_conv if s11dq1a ==1
+gen fert2 = s11c2q38a*s11c2q38a_conv if s11dq1a ==1
+gen fert3 = s11c2q39a*s11c2q39a_conv  if s11dq1a ==1
 
-
+*br s11c2q37a s11c2q37a_conv fert1 s11c2q38a s11c2q38a_conv fert2 s11c2q39a s11c2q39a_conv fert3 s11dq1a if s11dq1a ==1
 ****generate the total qty*************
 egen total_qty = rowtotal(fert1 fert2 fert3)
-tab  total_qty 
+sum  total_qty , detail
 
-replace total_qty  = 1000 if total_qty > 1000
+replace total_qty  = 500 if total_qty > 500
 tab  total_qty 
-
+sum  total_qty , detail
 
 ***************
 *organic fertilizer
@@ -141,9 +141,37 @@ gen org_fert = (s11dq36==1)
 tab org_fert, missing
 
 
-collapse (max) org_fert total_qty, by(hhid)
+collapse (sum) total_qty (max) org_fert , by(hhid)
+
+
+
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/weight.dta", gen(wgt)
+
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
+
+
+sum  total_qty , detail
+************winzonrizing total_qty
+foreach v of varlist  total_qty  {
+	_pctile `v' [aw=weight] , p(1 90) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 10%"
+}
+
+
+tab total_qty
+tab total_qty_w, missing
+sum total_qty total_qty_w, detail
+
+keep hhid total_qty_w org_fert 
+
 la var org_fert "1= if used organic fertilizer"
-label var total_qty "quantity of inorganic fertilizer used in kg"
+label var total_qty_w "quantity of inorganic fertilizer used in kg"
 sort hhid
 save "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta", replace
 
@@ -172,7 +200,7 @@ keep if ag_rainy_18==1
 
 ******conversion to kg
 
-gen input_kg = s11c3q4a*s11c3q4_conv
+gen input_kg = s11c3q4a*s11c3q4_conv if inputid >=2 & inputid <=4
 
 *br s11c3q4a s11c3q4b s11c3q4_conv input_kg
 
@@ -181,6 +209,9 @@ gen input_kg = s11c3q4a*s11c3q4_conv
 gen inorg_fert = input_kg if inputid >=2 & inputid <=4
 *br input_kg inputid inorg_fert
 tab inorg_fert
+
+
+
 
 gen cost_fert = s11c3q5 if inputid >=2 & inputid <=4
 *br s11c3q5 inputid cost_fert
@@ -275,35 +306,35 @@ tab num_fert_dist_lga
 tab num_fert_dist_state
 tab num_fert_dist_zone
 
-gen dist_cens_mrk = distance
+gen mrk_dist = distance
 
-replace dist_cens_mrk = medianfert_dist_ea if dist_cens_mrk ==. & num_fert_dist_ea >= 20
+replace mrk_dist = medianfert_dist_ea if mrk_dist ==. & num_fert_dist_ea >= 20
 
-tab dist_cens_mrk,missing
-
-
-replace dist_cens_mrk = medianfert_dist_lga if dist_cens_mrk ==. & num_fert_dist_lga >= 20
-
-tab dist_cens_mrk,missing
+tab mrk_dist,missing
 
 
+replace mrk_dist = medianfert_dist_lga if mrk_dist ==. & num_fert_dist_lga >= 20
 
-replace dist_cens_mrk = medianfert_dist_state if dist_cens_mrk ==. & num_fert_dist_state >= 20
-
-tab dist_cens_mrk,missing
-
-
-replace dist_cens_mrk = medianfert_dist_zone if dist_cens_mrk ==. & num_fert_dist_zone >= 20
-
-tab dist_cens_mrk,missing
-replace dist_cens_mrk = medianfert_dist_sector if dist_cens_mrk ==. & num_fert_dist_sector >= 20
-
-tab dist_cens_mrk,missing
-
-ren inorg_fert total_qty
+tab mrk_dist,missing
 
 
-collapse  (max) total_qty dist_cens_mrk tpricefert_cens_mrk, by(hhid)
+
+replace mrk_dist = medianfert_dist_state if mrk_dist ==. & num_fert_dist_state >= 20
+
+tab mrk_dist,missing
+
+
+replace mrk_dist = medianfert_dist_zone if mrk_dist ==. & num_fert_dist_zone >= 20
+
+tab mrk_dist,missing
+replace mrk_dist = medianfert_dist_sector if mrk_dist ==. & num_fert_dist_sector >= 20
+
+tab mrk_dist,missing
+
+
+
+
+collapse zone (max)  mrk_dist tpricefert_cens_mrk, by(hhid)
 
 
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/weight.dta", gen(wgt)
@@ -314,26 +345,10 @@ keep if ag_rainy_18==1
 
 
 
-************winzonrizing total_qty
-foreach v of varlist  total_qty  {
-	_pctile `v' [aw=weight] , p(1 99) 
-	gen `v'_w=`v'
-	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
-	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
-	local l`v' : var lab `v'
-	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
-}
-
-
-tab total_qty
-tab total_qty_w, missing
-sum total_qty total_qty_w, detail
-
-
 
 
 ************winzonrizing fertilizer distance
-foreach v of varlist  dist_cens_mrk  {
+foreach v of varlist  mrk_dist  {
 	_pctile `v' [aw=weight] , p(1 99) 
 	gen `v'_w=`v'
 	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
@@ -342,17 +357,17 @@ foreach v of varlist  dist_cens_mrk  {
 	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
 }
 
-tab dist_cens_mrk
-tab dist_cens_mrk_w, missing
-sum dist_cens_mrk dist_cens_mrk_w, detail
+tab mrk_dist
+tab mrk_dist_w, missing
+sum mrk_dist mrk_dist_w, detail
 
 gen rea_tpricefert_cens_mrk = tpricefert_cens_mrk
-gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk/359
+gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk
 tab real_tpricefert_cens_mrk
 sum real_tpricefert_cens_mrk, detail
 
 
-keep hhid dist_cens_mrk_w total_qty_w real_tpricefert_cens_mrk
+keep hhid zone mrk_dist_w real_tpricefert_cens_mrk
 
 
 
@@ -360,15 +375,7 @@ keep hhid dist_cens_mrk_w total_qty_w real_tpricefert_cens_mrk
 
 
 
-
-
-
-
-
-
-
-label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
-la var dist_cens_mrk_w "Distance from farm to where you purchased inorg fertilizer"
+la var mrk_dist_w "Distance from farm to where you purchased inorg fertilizer"
 
 label var real_tpricefert_cens_mrk "price of commercial fertilizer purchased in naira"
 sort hhid
@@ -483,33 +490,33 @@ use "${Nigeria_GHS_W4_raw_data}\sectc2_harvestw4.dta", clear
 *is_cd  222 for market infrastructure
 *c2q3  distance to infrastructure in km
 
-gen mrk_dist = c2q3 if is_cd==222
-tab mrk_dist if is_cd==222, missing
-egen median_lga = median(mrk_dist), by (zone state lga)
-egen median_state = median(mrk_dist), by (zone state)
-egen median_zone = median(mrk_dist), by (zone)
+gen mrk_dist1 = c2q3 if is_cd==222
+tab mrk_dist1 if is_cd==222, missing
+egen median_lga = median(mrk_dist1), by (zone state lga)
+egen median_state = median(mrk_dist1), by (zone state)
+egen median_zone = median(mrk_dist1), by (zone)
 
 
-replace mrk_dist =0 if is_cd==222 & mrk_dist==. & c2q1==1
-tab mrk_dist if is_cd==222, missing
+replace mrk_dist1 =0 if is_cd==222 & mrk_dist1==. & c2q1==1
+tab mrk_dist1 if is_cd==222, missing
 
-replace mrk_dist = median_lga if mrk_dist==. & is_cd==222
-replace mrk_dist = median_state if mrk_dist==. & is_cd==222
-replace mrk_dist = median_zone if mrk_dist==. & is_cd==222
-tab mrk_dist if is_cd==222, missing
+replace mrk_dist1 = median_lga if mrk_dist1==. & is_cd==222
+replace mrk_dist1 = median_state if mrk_dist1==. & is_cd==222
+replace mrk_dist1 = median_zone if mrk_dist1==. & is_cd==222
+tab mrk_dist1 if is_cd==222, missing
 
-replace mrk_dist= 45 if mrk_dist>=45 & mrk_dist<. & is_cd==222
-tab mrk_dist if is_cd==222, missing
+replace mrk_dist1= 45 if mrk_dist1>=45 & mrk_dist1<. & is_cd==222
+tab mrk_dist1 if is_cd==222, missing
 
 sort zone state ea
-collapse (max) median_lga median_state median_zone mrk_dist, by (zone state lga sector ea)
-replace mrk_dist = median_lga if mrk_dist ==.
-tab mrk_dist, missing
-replace mrk_dist = median_state if mrk_dist ==.
-tab mrk_dist, missing
-replace mrk_dist = median_zone if mrk_dist ==.
-tab mrk_dist, missing
-la var mrk_dist "=distance to the market"
+collapse (max) median_lga median_state median_zone mrk_dist1, by (zone state lga sector ea)
+replace mrk_dist1 = median_lga if mrk_dist1 ==.
+tab mrk_dist1, missing
+replace mrk_dist1 = median_state if mrk_dist1 ==.
+tab mrk_dist1, missing
+replace mrk_dist1 = median_zone if mrk_dist1 ==.
+tab mrk_dist1, missing
+la var mrk_dist1 "=distance to the market"
 
 save "${Nigeria_GHS_W4_created_data}\market_distance.dta", replace 
 
@@ -527,7 +534,7 @@ use "${Nigeria_GHS_W4_raw_data}\sect1_plantingw4.dta",clear
 
 merge 1:1 hhid indiv using "${Nigeria_GHS_W4_raw_data}\sect2_harvestw4.dta", gen(household)
 
-merge m:1 zone state lga sector ea using "${Nigeria_GHS_W4_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
+merge m:1 zone state lga sector ea using "${Nigeria_GHS_W4_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist1)
 
 merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
 
@@ -535,14 +542,8 @@ keep if ag_rainy_18==1
 **************
 *market distance
 *************
-replace mrk_dist = median_lga if mrk_dist==.
-tab mrk_dist, missing
 
-replace mrk_dist = median_state if mrk_dist==.
-tab mrk_dist, missing
 
-replace mrk_dist = median_zone if mrk_dist==.
-tab mrk_dist, missing
 
 
 
@@ -661,7 +662,7 @@ tab pry_edu if s1q3==1 , missing
 tab finish_pry if s1q3==1 , missing 
 tab finish_sec if s1q3==1 , missing
 
-collapse (sum) num_mem (max) mrk_dist hh_headage femhead attend_sch  pry_edu finish_pry finish_sec, by (hhid)
+collapse (sum) num_mem (max) mrk_dist1 hh_headage femhead attend_sch  pry_edu finish_pry finish_sec, by (hhid)
 
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/weight.dta", gen(wgt)
 
@@ -670,9 +671,16 @@ merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filte
 keep if ag_rainy_18==1
 
 
-tab mrk_dist
+tab mrk_dist1, missing
 ************winzonrizing distance to market
-foreach v of varlist  mrk_dist  {
+egen median_hhid = median(mrk_dist1), by (hhid)
+replace mrk_dist1 = median_hhid if mrk_dist1==.
+tab mrk_dist1, missing
+
+
+
+
+foreach v of varlist  mrk_dist1  {
 	_pctile `v' [aw=weight] , p(1 99) 
 	gen `v'_w=`v'
 	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
@@ -682,12 +690,12 @@ foreach v of varlist  mrk_dist  {
 }
 
 
-tab mrk_dist
-tab mrk_dist_w, missing
-sum mrk_dist mrk_dist_w, detail
+tab mrk_dist1
+tab mrk_dist1_w, missing
+sum mrk_dist1 mrk_dist1_w, detail
 
 
-keep hhid mrk_dist_w num_mem femhead hh_headage attend_sch pry_edu finish_pry finish_sec
+keep hhid mrk_dist1_w num_mem femhead hh_headage attend_sch pry_edu finish_pry finish_sec
 
 tab attend_sch, missing
 egen mid_attend= median(attend_sch)
@@ -708,7 +716,7 @@ replace finish_sec = mid_finish_sec if finish_sec==.
 
 
 la var num_mem "household size"
-la var mrk_dist_w "distance to the nearest market in km"
+la var mrk_dist1_w "distance to the nearest market in km"
 la var femhead  "=1 if head is female"
 la var hh_headage "age of household head in years"
 la var attend_sch"=1 if respondent attended school"
@@ -976,11 +984,11 @@ tab net_buyer,missing
 
 collapse  (max) maize_price_mr rice_price_mr net_seller net_buyer, by(hhid)
 gen rea_maize_price_mr = maize_price_mr
-gen real_maize_price_mr = rea_maize_price_mr/359
+gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
 sum real_maize_price_mr, detail
 gen rea_rice_price_mr = rice_price_mr
-gen real_rice_price_mr = rea_rice_price_mr/359
+gen real_rice_price_mr = rea_rice_price_mr
 tab real_rice_price_mr
 sum real_rice_price_mr, detail
 
@@ -1045,7 +1053,7 @@ tab hhasset_value_w, missing
 sum hhasset_value hhasset_value_w, detail
 
 gen rea_hhvalue = hhasset_value_w
-gen real_hhvalue= rea_hhvalue/359
+gen real_hhvalue= rea_hhvalue/1000
 sum hhasset_value_w real_hhvalue, detail
 
 
@@ -1314,32 +1322,45 @@ use "${Nigeria_GHS_W4_created_data}\purchased_fert_2018.dta", replace
 *******All observations Merged*****
 
 
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta", gen (subsidized)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta"
+drop _merge
 sort hhid
 
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\weight.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\savings_2018.dta", gen (savings)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\savings_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\credit_access_2018.dta", gen (credit)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\credit_access_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\extension_access_2018.dta", gen (extension)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\extension_access_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\demographics_2018.dta", gen (demographics)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\demographics_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\laborage_2018.dta", gen (labor)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\laborage_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\safety_net_2018.dta", gen (safety)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\safety_net_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\food_prices_2018.dta", gen (foodprices)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\food_prices_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta", gen (soil)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\soil_quality_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\geodata_2018.dta", gen (geodata)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\geodata_2018.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\household_asset_2018.dta", gen (asset)
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\household_asset_2018.dta"
+drop _merge
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\land_holding_2018.dta"
+drop _merge
 
 gen year = 2018
 sort hhid
@@ -1356,6 +1377,7 @@ proportion femhead informal_save formal_credit informal_credit ext_acess attend_
 
 
 
+**# Bookmark #1
 
 
 
@@ -1369,6 +1391,31 @@ egen fert_distance = median( dist_cens_mrk), by (hhid)
 replace dist_cens_mrk = fert_distance if dist_cens_mrk==.
 */
 order year
+
+
+gen year_2010 = year if year ==2010
+replace year_2010=0 if year_2010 ==.
+gen year_2012 = year if year== 2012
+replace year_2012=0 if year_2012 ==.
+gen year_2015 = year if year== 2015
+replace year_2015=0 if year_2015 ==.
+gen year_2018 = year if year==2018
+replace year_2018=0 if year_2018 ==.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Nigeria_complete_data.dta", replace
 
@@ -1389,6 +1436,15 @@ tabstat total_qty_w subsidy_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh
 
 misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer 
 proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
+
+
+
+
+
+
+
+
 
 
 

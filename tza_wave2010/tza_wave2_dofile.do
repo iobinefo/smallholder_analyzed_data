@@ -363,7 +363,7 @@ tab tpricefert_cens_mrk,missing
 
 
 
-collapse (sum)  total_qty  total_valuefert (max) dist_cens tpricefert_cens_mrk, by(y2_hhid)
+collapse region (sum)  total_qty  total_valuefert (max) dist_cens tpricefert_cens_mrk, by(y2_hhid)
 
 tab total_qty, missing
 tab dist_cens, missing
@@ -399,7 +399,7 @@ foreach v of varlist  dist_cens  {
 	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
 	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
 	local l`v' : var lab `v'
-	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
 }
 
 
@@ -419,7 +419,7 @@ foreach v of varlist  tpricefert_cens_mrk  {
 
 sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
 gen rea_tpricefert_cens_mrk = tpricefert_cens_mrk_w/0.5165365
-gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk/2530
+gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk
 tab real_tpricefert_cens_mrk, missing
 
 sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
@@ -439,7 +439,7 @@ ren y2_hhid HHID
 
 
 
-keep HHID dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
+keep HHID region dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
 
 la var dist_cens_w  "Distance from plot to market in km"
 label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
@@ -942,11 +942,11 @@ ren y2_hhid HHID
 collapse  (max) maize_price_mr rice_price_mr, by(HHID)
 
 gen rea_maize_price_mr = maize_price_mr/0.5165365
-gen real_maize_price_mr = rea_maize_price_mr/2530
+gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
 sum real_maize_price_mr, detail
 gen rea_rice_price_mr = rice_price_mr/0.5165365
-gen real_rice_price_mr = rea_rice_price_mr/2530
+gen real_rice_price_mr = rea_rice_price_mr
 tab real_rice_price_mr
 sum real_rice_price_mr, detail
 
@@ -1018,7 +1018,7 @@ keep if inlist(region,"SSF")
 	*does the same thing: keep if regioncode=="SSF"
 
 *keep our study countries
-keep if inlist(countrycode,"KEN")
+keep if inlist(countrycode,"TZA")
 	* does the same thing: drop if !(inlist(countrycode,"TZA"))
 
 
@@ -1026,10 +1026,10 @@ keep if inlist(countrycode,"KEN")
 drop yr1960-yr1989
 
 *take a look at recent values (note these all use 2010 as base year)
-l countrycode yr2004-yr2017
+l countrycode yr2004-yr2020
 
 *rebase to 2015
-gen baseyear = yr2016
+gen baseyear = yr2020
 forvalues i=1990(1)2022 {
 	replace yr`i' = yr`i'/baseyear
 }
@@ -1044,7 +1044,7 @@ rename yr cpi
 keep countrycode countryname year cpi
 order countrycode countryname year cpi
 la var year "Year"
-la var cpi "CPI (base=2016)"
+la var cpi "CPI (base=2020)"
 
 
 *save for use in analysis
@@ -1101,7 +1101,7 @@ sum hhasset_value hhasset_value_w, detail
 *summarize  hhasset_value_w hhasset_value_s , detail
 
 gen rea_hhvalue = hhasset_value_w/0.5165365
-gen real_hhvalue = rea_hhvalue/2530
+gen real_hhvalue = rea_hhvalue/1000
 sum hhasset_value_w real_hhvalue, detail
 
 ren y2_hhid HHID
@@ -1344,6 +1344,14 @@ tabstat total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem h
 
 misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
+
+
+
+
+
+
+
 
 
 

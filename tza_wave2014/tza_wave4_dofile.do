@@ -205,11 +205,11 @@ collapse  (max) maize_price_mr rice_price_mr, by(HHID)
 
 
 gen rea_maize_price_mr = maize_price_mr/0.7730376
-gen real_maize_price_mr = rea_maize_price_mr/2530
+gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
 sum real_maize_price_mr, detail
 gen rea_rice_price_mr = rice_price_mr/0.7730376
-gen real_rice_price_mr = rea_rice_price_mr/2530
+gen real_rice_price_mr = rea_rice_price_mr
 tab real_rice_price_mr
 sum real_rice_price_mr, detail
 
@@ -555,7 +555,7 @@ tab tpricefert_cens_mrk,missing
 
 
 
-collapse (sum)  total_qty total_valuefert  (max) dist_cens tpricefert_cens_mrk, by(y4_hhid)
+collapse region (sum)  total_qty total_valuefert  (max) dist_cens tpricefert_cens_mrk, by(y4_hhid)
 
 merge 1:1 y4_hhid using "${tza_GHS_W4_created_data}\hhids.dta"
 
@@ -612,7 +612,7 @@ foreach v of varlist  tpricefert_cens_mrk  {
 tab tpricefert_cens_mrk
 sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
 gen rea_tpricefert_cens_mrk = tpricefert_cens_mrk_w/0.7730376
-gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk/2530
+gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk
 tab real_tpricefert_cens_mrk, missing
 sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
 
@@ -620,7 +620,7 @@ sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
 
 
 ren y4_hhid HHID
-keep HHID dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
+keep HHID region dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
 la var dist_cens_w "Distance travelled from plot to market in km"
 label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
 label var total_valuefert "Total value of commercial fertilizer purchased in naira"
@@ -1023,7 +1023,7 @@ sum hhasset_value hhasset_value_w, detail
 replace hhasset_value_w =0 if hhasset_value_w==.
 
 gen rea_hhvalue = hhasset_value_w/0.7730376
-gen real_hhvalue = rea_hhvalue/2530
+gen real_hhvalue = rea_hhvalue/1000
 sum hhasset_value_w real_hhvalue, detail
 
 

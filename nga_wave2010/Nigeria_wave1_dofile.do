@@ -300,7 +300,7 @@ tab org_fert, missing
 
 
 
-collapse (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(hhid)
+collapse zone (sum) total_qty total_valuefert (max) org_fert tpricefert_cens_mrk, by(hhid)
 
 tab total_qty, missing
 tab tpricefert_cens_mrk, missing
@@ -343,12 +343,12 @@ foreach v of varlist  tpricefert_cens_mrk  {
 */
 
 gen rea_tpricefert_cens_mrk = tpricefert_cens_mrk/0.4164266
-gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk/359
+gen real_tpricefert_cens_mrk = rea_tpricefert_cens_mrk
 tab real_tpricefert_cens_mrk
 sum real_tpricefert_cens_mrk, detail
 
 
-keep hhid org_fert total_qty_w total_valuefert real_tpricefert_cens_mrk
+keep hhid zone org_fert total_qty_w total_valuefert real_tpricefert_cens_mrk
 
 la var org_fert "1 = if used organic fertilizer"
 label var total_qty_w "Total quantity of Commercial Fertilizer Purchased in kg"
@@ -949,11 +949,11 @@ collapse  (max) maize_price_mr rice_price_mr net_seller net_buyer, by(hhid)
 
 
 gen rea_maize_price_mr = maize_price_mr/0.4164266
-gen real_maize_price_mr = rea_maize_price_mr/359
+gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
 sum real_maize_price_mr, detail
 gen rea_rice_price_mr = rice_price_mr/0.4164266
-gen real_rice_price_mr = rea_rice_price_mr/359
+gen real_rice_price_mr = rea_rice_price_mr
 tab real_rice_price_mr
 sum real_rice_price_mr, detail
 
@@ -1110,7 +1110,7 @@ sum hhasset_value hhasset_value_w, detail
 *summarize  hhasset_value_w hhasset_value_s , detail
 
 gen rea_hhvalue = hhasset_value_w/0.4164266
-gen real_hhvalue = rea_hhvalue/359
+gen real_hhvalue = rea_hhvalue/1000
 sum hhasset_value_w real_hhvalue, detail
 
 
@@ -1299,33 +1299,47 @@ use "${Nigeria_GHS_W1_created_data}\purchasefert.dta", replace
 *******All observations Merged*****
 
 
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\subsidized_fert.dta", gen (subsidized)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\subsidized_fert.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta"
+drop _merge
 sort hhid
 
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\savings.dta", gen (savings)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\savings.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\credit_access.dta", gen (credit)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\credit_access.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\extension_visit.dta", gen (extension)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\extension_visit.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\demographics.dta", gen (demographics)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\demographics.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\labor_age.dta", gen (labor)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\labor_age.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\safety_net.dta", gen (safety)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\safety_net.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\assest_value.dta", gen (asset)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\assest_value.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta", gen (foodprices)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\net_buyer_seller.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\geodata.dta", gen (geodata)
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\geodata.dta"
+drop _merge
 sort hhid
-merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta", gen(soil)
-drop if soil==2
+merge 1:1 hhid using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\nga_wave2012\soil_quality_2012.dta"
+
+drop if _merge==2
+drop _merge
 sort hhid
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}\land_holdings.dta"
+drop _merge
 gen year = 2010
 sort hhid
 order year

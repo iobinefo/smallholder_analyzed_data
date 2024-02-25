@@ -280,11 +280,11 @@ collapse  (max) maize_price_mr rice_price_mr, by(HHID)
 
 
 gen rea_maize_price_mr = maize_price_mr
-gen real_maize_price_mr = rea_maize_price_mr/2530
+gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
 sum real_maize_price_mr, detail
 gen rea_rice_price_mr = rice_price_mr
-gen real_rice_price_mr = rea_rice_price_mr/2530
+gen real_rice_price_mr = rea_rice_price_mr
 tab real_rice_price_mr
 sum real_rice_price_mr, detail
 
@@ -509,7 +509,7 @@ tab org_fert,missing
 
 
 
-collapse (sum)  total_qty total_valuefert (max) dist_cens org_fert tpricefert_cens_mrk, by(y5_hhid)
+collapse region (sum)  total_qty total_valuefert (max) dist_cens org_fert tpricefert_cens_mrk, by(y5_hhid)
 
 merge 1:1 y5_hhid using "${tza_GHS_W5_created_data}\hhids.dta"
 
@@ -565,7 +565,7 @@ foreach v of varlist  tpricefert_cens_mrk  {
 }
 tab tpricefert_cens_mrk
 sum tpricefert_cens_mrk tpricefert_cens_mrk_w, detail
-gen real_tpricefert_cens_mrk = tpricefert_cens_mrk_w/2530
+gen real_tpricefert_cens_mrk = tpricefert_cens_mrk_w
 tab real_tpricefert_cens_mrk, missing
 sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
 
@@ -573,7 +573,7 @@ sum tpricefert_cens_mrk_w real_tpricefert_cens_mrk, detail
 
 
 ren y5_hhid HHID
-keep HHID org_fert dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
+keep HHID region org_fert dist_cens_w total_qty_w total_valuefert real_tpricefert_cens_mrk
 
 
 
@@ -984,7 +984,7 @@ sum hhasset_value hhasset_value_w, detail
 
 replace hhasset_value_w =0 if hhasset_value_w==.
 
-gen real_hhvalue = hhasset_value_w/2530
+gen real_hhvalue = hhasset_value_w/1000
 sum hhasset_value_w real_hhvalue, detail
 
 
@@ -1340,6 +1340,21 @@ append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_dat
 append using "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\tza_wave2020\tanzania_wave5_completedata_2020.dta" 
 
 order year
+
+
+gen year_2010 = year if year ==2010
+replace year_2010=0 if year_2010 ==.
+gen year_2012 = year if year== 2012
+replace year_2012=0 if year_2012 ==.
+gen year_2014 = year if year== 2014
+replace year_2014=0 if year_2014 ==.
+gen year_2020 = year if year==2020
+replace year_2020=0 if year_2020 ==.
+
+encode HHID, gen(hhid)
+
+
+
 save "C:\Users\obine\Music\Documents\Smallholder lsms STATA\analyzed_data\complete_files\Tanzania_complete_data.dta", replace
 
 
@@ -1350,6 +1365,14 @@ tabstat total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem h
 
 
 
-misstable summarize subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
-proportion subsidy_dummy femhead formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+misstable summarize subsidy_dummy femhead formal_save formal_bank formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead formal_save formal_bank formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+
+
+
+
+
+
+
+
 
