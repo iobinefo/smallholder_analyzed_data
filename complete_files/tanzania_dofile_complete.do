@@ -221,3 +221,67 @@ program define APEboot, rclass
 end
 bootstrap crowd_out_est_asset_q5 = r(ape_xj), reps(250) cluster(hhid) idcluster(newid): APEboot
 
+
+
+
+
+
+
+
+                                   *********************************************** 
+								   *Crowding out estimate for each year
+								   ***********************************************
+
+
+	preserve
+	craggit commercial_dummy subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk real_hhvalue worker real_maize_price_mr real_rice_price_mr  field_size_ha_w femhead formal_save formal_bank formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2 TAvg_total_qty_w TAvg_subsidy_qty_w TAvg_dist_cens_w TAvg_real_tpricefert_cens_mrk TAvg_num_mem TAvg_hh_headage_mrk TAvg_real_hhvalue TAvg_worker TAvg_real_maize_price_mr TAvg_real_rice_price_mr TAvg_field_size_ha_w TAvg_femhead TAvg_formal_save TAvg_formal_bank TAvg_formal_credit TAvg_informal_credit TAvg_ext_acess TAvg_attend_sch TAvg_pry_edu TAvg_finish_pry TAvg_finish_sec TAvg_safety_net TAvg_net_seller TAvg_net_buyer TAvg_soil_qty_rev2 TAvg_soil_qty_rev2 year_2010 year_2012 year_2014 year_2020, second(total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk real_hhvalue worker real_maize_price_mr real_rice_price_mr  field_size_ha_w femhead formal_save formal_bank formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2 TAvg_total_qty_w TAvg_subsidy_qty_w TAvg_dist_cens_w TAvg_real_tpricefert_cens_mrk TAvg_num_mem TAvg_hh_headage_mrk TAvg_real_hhvalue TAvg_worker TAvg_real_maize_price_mr TAvg_real_rice_price_mr TAvg_field_size_ha_w TAvg_femhead TAvg_formal_save TAvg_formal_bank TAvg_formal_credit TAvg_informal_credit TAvg_ext_acess TAvg_attend_sch TAvg_pry_edu TAvg_finish_pry TAvg_finish_sec TAvg_safety_net TAvg_net_seller TAvg_net_buyer TAvg_soil_qty_rev2 TAvg_soil_qty_rev2 year_2010 year_2012 year_2014 year_2020) cluster(hhid)
+
+	predict bsx1g, eq(Tier1)
+	predict bsx2b, eq(Tier2)
+	predict  bssigma , eq(sigma)
+	generate bsIMR = normalden(bsx2b/bssigma)/normal(bsx2b/bssigma)
+	generate bsdEy_dxj = 												///
+				[Tier1]_b[subsidy_qty_w]*normalden(bsx1g)*(bsx2b+bssigma*bsIMR) ///
+				+[Tier2]_b[subsidy_qty_w]*normal(bsx1g)*(1-bsIMR*(bsx2b/bssigma+bsIMR))
+	
+	
+	summarize bsdEy_dxj // Average crowding out estimate for reference. Use SE from bootstrap 
+
+	tabulate year, summarize (bsdEy_dxj) // Crowding out estimate for each quintile
+	restore
+
+	
+	
+	
+
+
+
+                                   *********************************************** 
+								   *Crowding out estimate for land_holding
+								   ***********************************************
+	
+	xtile land_quintiles=field_size_ha_w, nq(5)
+
+	preserve
+	craggit commercial_dummy subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk real_hhvalue worker real_maize_price_mr real_rice_price_mr  field_size_ha_w femhead formal_save formal_bank formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2 TAvg_total_qty_w TAvg_subsidy_qty_w TAvg_dist_cens_w TAvg_real_tpricefert_cens_mrk TAvg_num_mem TAvg_hh_headage_mrk TAvg_real_hhvalue TAvg_worker TAvg_real_maize_price_mr TAvg_real_rice_price_mr TAvg_field_size_ha_w TAvg_femhead TAvg_formal_save TAvg_formal_bank TAvg_formal_credit TAvg_informal_credit TAvg_ext_acess TAvg_attend_sch TAvg_pry_edu TAvg_finish_pry TAvg_finish_sec TAvg_safety_net TAvg_net_seller TAvg_net_buyer TAvg_soil_qty_rev2 TAvg_soil_qty_rev2 year_2010 year_2012 year_2014 year_2020, second(total_qty_w subsidy_qty_w dist_cens_w real_tpricefert_cens_mrk num_mem hh_headage_mrk real_hhvalue worker real_maize_price_mr real_rice_price_mr  field_size_ha_w femhead formal_save formal_bank formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2 TAvg_total_qty_w TAvg_subsidy_qty_w TAvg_dist_cens_w TAvg_real_tpricefert_cens_mrk TAvg_num_mem TAvg_hh_headage_mrk TAvg_real_hhvalue TAvg_worker TAvg_real_maize_price_mr TAvg_real_rice_price_mr TAvg_field_size_ha_w TAvg_femhead TAvg_formal_save TAvg_formal_bank TAvg_formal_credit TAvg_informal_credit TAvg_ext_acess TAvg_attend_sch TAvg_pry_edu TAvg_finish_pry TAvg_finish_sec TAvg_safety_net TAvg_net_seller TAvg_net_buyer TAvg_soil_qty_rev2 TAvg_soil_qty_rev2 year_2010 year_2012 year_2014 year_2020) cluster(hhid)
+
+	predict bsx1g, eq(Tier1)
+	predict bsx2b, eq(Tier2)
+	predict  bssigma , eq(sigma)
+	generate bsIMR = normalden(bsx2b/bssigma)/normal(bsx2b/bssigma)
+	generate bsdEy_dxj = 												///
+				[Tier1]_b[subsidy_qty_w]*normalden(bsx1g)*(bsx2b+bssigma*bsIMR) ///
+				+[Tier2]_b[subsidy_qty_w]*normal(bsx1g)*(1-bsIMR*(bsx2b/bssigma+bsIMR))
+	
+	
+	summarize bsdEy_dxj // Average crowding out estimate for reference. Use SE from bootstrap 
+
+	tabulate land_quintiles, summarize (bsdEy_dxj) // Crowding out estimate for each quintile
+	restore	
+	
+	
+	
+	
+	
+	
+	
