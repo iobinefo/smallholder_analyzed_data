@@ -242,9 +242,9 @@ gen tpricefert = total_valuefert/total_qty
 tab tpricefert
 
 gen tpricefert_cens = tpricefert
-replace tpricefert_cens = 650 if tpricefert_cens > 650 & tpricefert_cens < .
+replace tpricefert_cens = 650 if tpricefert_cens > 650 & tpricefert_cens < . //winzonrizing bottom 5%
 replace tpricefert_cens = 2 if tpricefert_cens < 2
-tab tpricefert_cens, missing
+tab tpricefert_cens, missing //winzonrizing top 5%
 
 
 

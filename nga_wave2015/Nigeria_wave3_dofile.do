@@ -175,7 +175,41 @@ tab subsidy_qty2
 *gen subsidy_qty3 = s11dq37a if institute3==1
 *tab subsidy_qty3
 
-egen subsidy_qty = rowtotal(subsidy_qty1 subsidy_qty2)
+
+
+
+
+
+**************
+*E-WALLET SUBSIDY
+**************
+
+ren s11dq5a esubsidy_dummy 
+tab esubsidy_dummy,missing
+tab esubsidy_dummy, nolabel
+replace esubsidy_dummy =0 if esubsidy_dummy==2 | esubsidy_dummy==.
+tab esubsidy_dummy,missing
+tab esubsidy_dummy, nolabel
+
+
+ren s11dq5c1 esubsidy_qty 
+tab esubsidy_qty, missing
+
+
+
+
+
+
+
+
+
+
+
+************
+*Getting total subsidy_dummy
+**********
+
+egen subsidy_qty = rowtotal(subsidy_qty1 subsidy_qty2 esubsidy_qty)
 tab subsidy_qty,missing
 sum subsidy_qty,detail
 
@@ -185,8 +219,8 @@ replace subsidy_dummy = 1 if institute==1
 tab subsidy_dummy, missing
 replace subsidy_dummy = 1 if institute2==1
 tab subsidy_dummy, missing
-*replace subsidy_dummy = 1 if institute3==1
-*tab subsidy_dummy, missing
+replace subsidy_dummy = 1 if esubsidy_dummy ==1
+tab subsidy_dummy, missing
 
 collapse (sum)subsidy_qty (max) subsidy_dummy, by (hhid)
 
@@ -227,7 +261,7 @@ save "${Nigeria_GHS_W3_created_data}\subsidized_fert_2015.dta", replace
 
 
 
-
+/*
 *****************************************
 *E-Wallet Subsidized Fertilizer
 *****************************************
@@ -265,7 +299,7 @@ label var esubsidy_qty "Quantity of E-wallet Fertilizer Purchased in kg"
 label var esubsidy_dummy "=1 if acquired the E-wallet subsidied fertilizer"
 save "${Nigeria_GHS_W3_created_data}\E-wallet_subsidized_fert_2015.dta", replace
 
-
+*/
 
 
 
@@ -336,9 +370,9 @@ gen tpricefert  = total_valuefert /total_qty
 tab tpricefert , missing
 
 gen tpricefert_cens = tpricefert  
-replace tpricefert_cens = 1000 if tpricefert_cens > 1000 & tpricefert_cens < .
-replace tpricefert_cens = 22 if tpricefert_cens < 22
-tab tpricefert_cens, missing
+replace tpricefert_cens = 1200 if tpricefert_cens > 1200 & tpricefert_cens < . //winzonrizing bottom 16%
+replace tpricefert_cens = 12 if tpricefert_cens < 12
+tab tpricefert_cens, missing  //winzonrizing top 5%
 
 
 

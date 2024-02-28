@@ -210,11 +210,13 @@ gen private_fert2_qty = s11dq26 if institute2 ==3
 tab private_fert2_qty
 
 gen private_fert1_val = s11dq18 if institute ==6
-
+/*
 egen val2_cens = median (s11dq31)
 tab val2_cens
 replace s11dq31= val2_cens if s11dq31==.
 tab s11dq31
+
+*/
 gen private_fert2_val = s11dq31 if institute2 ==3
 tab private_fert2_val
 
@@ -231,9 +233,9 @@ tab tpricefert
 
 
 gen tpricefert_cens = tpricefert 
-replace tpricefert_cens = 500 if tpricefert_cens > 500 & tpricefert_cens < .
+replace tpricefert_cens = 500 if tpricefert_cens > 500 & tpricefert_cens < . //winzonrizing at bottom 5%
 replace tpricefert_cens = 20 if tpricefert_cens < 20
-tab tpricefert_cens, missing
+tab tpricefert_cens, missing  //winzonrizing at top 10%
 *graph box total_valuefert if total_valuefert!=0
 *hist total_valuefert, normal width(5)
 

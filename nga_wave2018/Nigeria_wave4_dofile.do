@@ -127,12 +127,12 @@ gen fert3 = s11c2q39a*s11c2q39a_conv  if s11dq1a ==1
 
 *br s11c2q37a s11c2q37a_conv fert1 s11c2q38a s11c2q38a_conv fert2 s11c2q39a s11c2q39a_conv fert3 s11dq1a if s11dq1a ==1
 ****generate the total qty*************
-egen total_qty = rowtotal(fert1 fert2 fert3)
-sum  total_qty , detail
+egen used_fert = rowtotal(fert1 fert2 fert3)
+sum  used_fert , detail
 
-replace total_qty  = 500 if total_qty > 500
-tab  total_qty 
-sum  total_qty , detail
+replace used_fert  = 500 if used_fert > 500
+tab  used_fert 
+sum  used_fert , detail
 
 ***************
 *organic fertilizer
@@ -141,7 +141,7 @@ gen org_fert = (s11dq36==1)
 tab org_fert, missing
 
 
-collapse (sum) total_qty (max) org_fert , by(hhid)
+collapse (sum) used_fert (max) org_fert , by(hhid)
 
 
 
@@ -152,9 +152,9 @@ merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filte
 keep if ag_rainy_18==1
 
 
-sum  total_qty , detail
+sum  used_fert , detail
 ************winzonrizing total_qty
-foreach v of varlist  total_qty  {
+foreach v of varlist  used_fert  {
 	_pctile `v' [aw=weight] , p(1 90) 
 	gen `v'_w=`v'
 	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
@@ -164,17 +164,108 @@ foreach v of varlist  total_qty  {
 }
 
 
-tab total_qty
-tab total_qty_w, missing
-sum total_qty total_qty_w, detail
+tab used_fert
+tab used_fert_w, missing
+sum used_fert used_fert_w, detail
 
-keep hhid total_qty_w org_fert 
+keep hhid used_fert_w org_fert 
 
 la var org_fert "1= if used organic fertilizer"
-label var total_qty_w "quantity of inorganic fertilizer used in kg"
+label var used_fert_w "quantity of inorganic fertilizer used in kg"
 sort hhid
 save "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta", replace
 
+
+****************************
+*Subsidized Fertilizer
+****************************
+
+use "${Nigeria_GHS_W4_raw_data}\secta11c3_harvestw4.dta",clear   
+merge m:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
+ //household level variables......... distance to purchase was also asked
+
+*inputid  1= org fert| 2-4 inorg fert
+*s11c3q2  1= hhold purchased inputs
+*s11c3q4a qty of purchased inputs
+*s11c3q4b units of purchased inputs
+*s11c3q4_conv conversion factor
+*s11c3q5  cost of inputs
+*s11c3q6b institute of purchased
+*s11c3q7  distance to institute (km)
+
+
+******conversion to kg
+
+gen input_kg = s11c3q4a*s11c3q4_conv if inputid >=2 & inputid <=4
+
+*br s11c3q4a s11c3q4b s11c3q4_conv input_kg
+
+***getting the qty for inorg fertilizer
+
+gen inorg_fert = input_kg if inputid >=2 & inputid <=4
+*br input_kg inputid inorg_fert
+tab inorg_fert
+
+
+
+
+
+
+************
+*Getting total subsidy_dummy
+**********
+
+*****I am using Agricultural input dealer and govt extension officer on the assumption that they sell subsidized fertilizer
+
+gen subsidy_qty = inorg_fert if s11c3q6b ==1 | s11c3q6b ==3
+tab subsidy_qty
+tab subsidy_qty,missing
+sum subsidy_qty,detail
+
+
+gen subsidy_dummy = 0
+replace subsidy_dummy = 1 if s11c3q6b ==1 | s11c3q6b ==3
+tab subsidy_dummy, missing
+
+
+collapse (sum)subsidy_qty (max) subsidy_dummy, by (hhid)
+
+
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/weight.dta", gen(wgt)
+
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filter)
+
+keep if ag_rainy_18==1
+
+************winzonrizing subsidy_qty
+foreach v of varlist  subsidy_qty  {
+	_pctile `v' [aw=weight] , p(1 99) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+tab subsidy_qty
+tab subsidy_qty_w, missing
+sum subsidy_qty subsidy_qty_w, detail
+
+
+
+
+
+
+
+keep hhid subsidy_qty_w subsidy_dummy
+
+
+
+label var subsidy_qty "Quantity of Fertilizer Purchased in kg"
+label var subsidy_dummy "=1 if acquired any subsidied fertilizer"
+save "${Nigeria_GHS_W4_created_data}\subsidized_fert_2018.dta", replace
 
 
 
@@ -210,19 +301,20 @@ gen inorg_fert = input_kg if inputid >=2 & inputid <=4
 *br input_kg inputid inorg_fert
 tab inorg_fert
 
-
+gen total_qty = input_kg if inputid >=2 & inputid <=4 & s11c3q6b== 6
 
 
 gen cost_fert = s11c3q5 if inputid >=2 & inputid <=4
+gen cost_fert_real = cost_fert if s11c3q6b== 6
 *br s11c3q5 inputid cost_fert
 
-gen tpricefert = cost_fert/inorg_fert
+gen tpricefert = cost_fert_real/total_qty
 tab tpricefert
 
 gen tpricefert_cens = tpricefert 
-replace tpricefert_cens = 500 if tpricefert_cens > 500 & tpricefert_cens < .
-replace tpricefert_cens = 40 if tpricefert_cens < 40
-tab tpricefert_cens, missing
+replace tpricefert_cens = 500 if tpricefert_cens > 500 & tpricefert_cens < .   //winzonrizing bottom 1%
+replace tpricefert_cens = 60 if tpricefert_cens < 60
+tab tpricefert_cens, missing //winzonrizing top 1%
 
 
 egen medianfert_pr_ea = median(tpricefert_cens), by (ea)
@@ -334,7 +426,7 @@ tab mrk_dist,missing
 
 
 
-collapse zone (max)  mrk_dist tpricefert_cens_mrk, by(hhid)
+collapse  (sum) total_qty (max)  mrk_dist tpricefert_cens_mrk, by(hhid)
 
 
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/weight.dta", gen(wgt)
@@ -344,6 +436,21 @@ merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}/ag_rainy_18.dta", gen(filte
 keep if ag_rainy_18==1
 
 
+
+************winzonrizing total_qty
+foreach v of varlist  total_qty  {
+	_pctile `v' [aw=weight] , p(1 95) 
+	gen `v'_w=`v'
+	*replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 1%"
+}
+
+
+tab total_qty
+tab total_qty_w, missing
+sum total_qty total_qty_w, detail
 
 
 
@@ -367,7 +474,7 @@ tab real_tpricefert_cens_mrk
 sum real_tpricefert_cens_mrk, detail
 
 
-keep hhid zone mrk_dist_w real_tpricefert_cens_mrk
+keep hhid total_qty_w mrk_dist_w real_tpricefert_cens_mrk
 
 
 
@@ -982,7 +1089,7 @@ replace net_buyer=0 if net_buyer==.
 tab net_buyer,missing
 
 
-collapse  (max) maize_price_mr rice_price_mr net_seller net_buyer, by(hhid)
+collapse  zone (max) maize_price_mr rice_price_mr net_seller net_buyer, by(hhid)
 gen rea_maize_price_mr = maize_price_mr
 gen real_maize_price_mr = rea_maize_price_mr
 tab real_maize_price_mr
@@ -1321,6 +1428,9 @@ use "${Nigeria_GHS_W4_created_data}\purchased_fert_2018.dta", replace
 
 *******All observations Merged*****
 
+merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\subsidized_fert_2018.dta"
+drop _merge
+sort hhid
 
 merge 1:1 hhid using "${Nigeria_GHS_W4_created_data}\total_qty_2018.dta"
 drop _merge
@@ -1368,11 +1478,11 @@ save "${Nigeria_GHS_W4_created_data}\Nigeria_wave4_completedata_2018.dta", repla
 
 
 
-tabstat total_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh_headage real_hhvalue worker real_maize_price_mr real_rice_price_mr land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
+tabstat total_qty_w subsidy_qty_w mrk_dist_w real_tpricefert_cens_mrk num_mem hh_headage real_hhvalue worker real_maize_price_mr real_rice_price_mr land_holding [aweight = weight], statistics( mean median sd min max ) columns(statistics)
 
 
-misstable summarize femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
-proportion femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+misstable summarize subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
+proportion subsidy_dummy femhead informal_save formal_credit informal_credit ext_acess attend_sch pry_edu finish_pry finish_sec safety_net net_seller net_buyer soil_qty_rev2
 
 
 
@@ -1393,14 +1503,7 @@ replace dist_cens_mrk = fert_distance if dist_cens_mrk==.
 order year
 
 
-gen year_2010 = year if year ==2010
-replace year_2010=0 if year_2010 ==.
-gen year_2012 = year if year== 2012
-replace year_2012=0 if year_2012 ==.
-gen year_2015 = year if year== 2015
-replace year_2015=0 if year_2015 ==.
-gen year_2018 = year if year==2018
-replace year_2018=0 if year_2018 ==.
+
 
 
 

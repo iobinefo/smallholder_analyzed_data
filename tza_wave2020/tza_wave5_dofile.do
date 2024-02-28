@@ -359,6 +359,7 @@ keep if ag_rainy_20==1
 
 *ag3a_51   ag3b_51 total value of inorganic fert1
 *ag3a_53_1   ag3b_53_1 institution where they bought inorg fert1
+*from who did you received this input on credit
 ***********
 *other inorganic fert
 ***********
